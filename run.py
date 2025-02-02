@@ -2,8 +2,8 @@
 Interface for running the robot in real or simulation mode.
 
 Contribute:
-Add planner classes to the experiments directory and then add them to the get_planner function.
-Every planner class should have a get_planner_commands method that returns a dictionary of joint names and their target positions in degrees.
+
+Please add to /planners director your planner. You must have update() and get_command_positions() methods.
 
 Usage:
 python run.py --real # only real robot via PyKOS
@@ -19,22 +19,28 @@ import argparse
 import asyncio
 import time
 import traceback
+import math
 
 from typing import Dict, Union
-from unit_types import Degree
+from unit_types import Degree, Radian
 
 import telemetry
 
 from planners.zmp_walking import ZMPWalkingPlanner
+from planners.record_skill import RecordSkill
+from planners.play_skill import PlaySkill
 
 ########################################################
 # TODO: ADD YOUR PLANNER CLASSES HERE
 ########################################################
 
-
-def get_planner(planner_name):
+def get_planner(planner_name : str, args : argparse.Namespace):
     if planner_name == "zmp":
         return ZMPWalkingPlanner(enable_lateral_motion=True)
+    elif planner_name == "play_skill":
+        return PlaySkill(skill_name=args.play_skill)
+    elif planner_name == "record_skill":
+        return RecordSkill()
     else:
         raise ValueError(f"Unsupported planner: {planner_name}")
 
@@ -64,22 +70,25 @@ async def controller(planner, hz=100, robot=None, puppet=None):
                     try:
                         start = time.perf_counter()
 
-                        feedback_positions = None
+                        feedback_positions = await robot.get_feedback_positions()
 
                         planner.update(feedback_positions)
-
                         command_positions: Dict[str, Union[int, Degree]] = (
-                            planner.get_planner_commands()
+                            planner.get_command_positions()
                         )
 
                         async def control_real() -> None:
                             if command_positions:
-                                await robot.set_command_positions(command_positions)
+                                await robot.set_real_command_positions(command_positions)
 
                         async def control_sim() -> None:
                             if puppet is not None:
-                                sim_commands = planner.get_simulation_commands()
-                                await puppet.set_joint_angles(sim_commands)
+                                import math
+                                radian_command_positions: Dict[str, Union[int, Radian]] = {
+                                    joint: math.radians(value)
+                                    for joint, value in command_positions.items()
+                                }
+                                await puppet.set_joint_angles(radian_command_positions)
 
                         await asyncio.gather(
                             control_real(),
@@ -108,8 +117,16 @@ async def controller(planner, hz=100, robot=None, puppet=None):
 
                 planner.update()
 
-                sim_commands = planner.get_simulation_commands()
-                await puppet.set_joint_angles(sim_commands)
+                command_positions: Dict[str, Union[int, Degree]] = (
+                    planner.get_command_positions()
+                )
+
+                if command_positions:
+                    radian_command_positions: Dict[str, Union[int, Radian]] = {
+                        joint: math.radians(value)
+                        for joint, value in command_positions.items()
+                    }
+                    await puppet.set_joint_angles(radian_command_positions)
 
                 await hz_counter.update()
 
@@ -133,6 +150,7 @@ async def main():
     )
     parser.add_argument("--ip", default="192.168.42.1", help="IP address of the robot.")
     parser.add_argument("--planner", default="zmp", help="Name of the planner to use.")
+    parser.add_argument("--play_skill", default="pickup", help="Name of the skill to play.")
     args = parser.parse_args()
 
     ip_address = args.ip if args.real else None
@@ -141,7 +159,7 @@ async def main():
     robot = RobotInterface(ip=ip_address) if args.real else None
     puppet = MujocoPuppet(mjcf_name) if args.sim else None
 
-    planner = get_planner(args.planner)
+    planner = get_planner(args.planner, args)
     logger.info("Running in real mode..." if args.real else "Running in sim mode...")
 
     try:

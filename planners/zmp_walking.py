@@ -316,7 +316,7 @@ class ZMPWalkingPlanner:
 
         return angles
 
-    def get_planner_commands(self) -> Dict[str, Union[int, Degree]]:
+    def get_command_positions(self) -> Dict[str, Union[int, Degree]]:
         angles = self.add_offsets()
         cmds = {}
         for joint_name, angle_radians in angles.items():
@@ -324,13 +324,4 @@ class ZMPWalkingPlanner:
                 continue
             angle_degrees = math.degrees(angle_radians)
             cmds[joint_name] = angle_degrees
-        return cmds
-
-    def get_simulation_commands(self) -> Dict[str, float]:
-        angles = self.add_offsets()
-        cmds = {}
-        for joint, angle_radians in angles.items():
-            if joint not in joint_to_actuator_id:
-                continue
-            cmds[joint] = angle_radians
         return cmds

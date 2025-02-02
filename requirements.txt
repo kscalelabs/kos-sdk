@@ -6,4 +6,3 @@ mujoco
 mujoco-python-viewer
 pybullet
 ruff
-skillit

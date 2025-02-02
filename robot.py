@@ -74,7 +74,7 @@ class RobotInterface:
                 [{"actuator_id": actuator_id, "position": 0}]
             )
 
-    async def set_command_positions(
+    async def set_real_command_positions(
         self, positions: Dict[str, Union[int, Degree]]
     ) -> None:
         await self.kos.actuator.command_actuators(
@@ -83,7 +83,6 @@ class RobotInterface:
                 for name, pos in positions.items()
             ]
         )
-
     async def get_feedback_state(self) -> Any:
         return await self.kos.actuator.get_actuators_state(list(JOINT_TO_ID.values()))
 
