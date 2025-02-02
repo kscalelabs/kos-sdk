@@ -33,6 +33,7 @@ JOINT_TO_ID = {
 
 ID_TO_JOINT = {v: k for k, v in JOINT_TO_ID.items()}
 
+
 class RobotInterface:
     def __init__(self, ip: str) -> None:
         self.ip: str = ip
@@ -88,4 +89,7 @@ class RobotInterface:
 
     async def get_feedback_positions_only(self) -> Dict[str, Union[int, Degree]]:
         feedback_state = await self.get_feedback_state()
-        return {ID_TO_JOINT[state.actuator_id]: state.position for state in feedback_state.states}
+        return {
+            ID_TO_JOINT[state.actuator_id]: state.position
+            for state in feedback_state.states
+        }

@@ -6,15 +6,14 @@ Add planner classes to the experiments directory and then add them to the get_pl
 Every planner class should have a get_planner_commands method that returns a dictionary of joint names and their target positions in degrees.
 
 Usage:
-python run.py --real
-python run.py --sim
-python run.py --real --sim
+python run.py --real # only real robot via PyKOS
+python run.py --sim # only simulation via Mujoco
+python run.py --real --sim # real robot and simulation
 """
 
 from robot import RobotInterface
 from ks_digital_twin.puppet.mujoco_puppet import MujocoPuppet
 
-import math
 from loguru import logger
 import argparse
 import asyncio
@@ -22,11 +21,11 @@ import time
 import traceback
 
 from typing import Dict, Union
-from unit_types import Degree, Radian
+from unit_types import Degree
 
 import telemetry
 
-from experiments.zmp_walking import ZMPWalkingPlanner
+from planners.zmp_walking import ZMPWalkingPlanner
 
 ########################################################
 # TODO: ADD YOUR PLANNER CLASSES HERE
@@ -43,7 +42,7 @@ def get_planner(planner_name):
 ########################################################
 
 
-async def controller(planner, hz=1000, robot=None, puppet=None):
+async def controller(planner, hz=100, robot=None, puppet=None):
     hz_counter = telemetry.HzCounter(interval=1 / hz)
 
     if robot is not None:
@@ -65,37 +64,31 @@ async def controller(planner, hz=1000, robot=None, puppet=None):
                     try:
                         start = time.perf_counter()
 
-                        feedback_positions: Dict[
-                            str, Union[int, Degree]
-                        ] = await robot.get_feedback_positions_only()
-                        logger.debug(f"Feedback positions: {feedback_positions}")
+                        feedback_positions = None
 
                         planner.update(feedback_positions)
-                        logger.debug("Planner updated with feedback positions.")
 
-                        command_positions: Dict[str, Union[int, Degree]] = planner.get_planner_commands()
-                        logger.debug(f"Command positions: {command_positions}")
+                        command_positions: Dict[str, Union[int, Degree]] = (
+                            planner.get_planner_commands()
+                        )
 
                         if command_positions:
                             await robot.set_command_positions(command_positions)
-                            logger.debug("Set command positions on robot.")
-                        if puppet is not None and command_positions:
-                            command_positions_rad: Dict[str, Union[int, Radian]] = {
-                                k: math.radians(v) for k, v in command_positions.items()
-                            }
-                            await puppet.set_joint_angles(command_positions_rad)
-                            logger.debug("Set joint angles on puppet.")
+                        if puppet is not None:
+                            sim_commands = planner.get_simulation_commands()
+                            await puppet.set_joint_angles(sim_commands)
 
                         hz_counter.update()
 
                         elapsed = time.perf_counter() - start
                         remaining = 1 / hz - elapsed
 
-                        await asyncio.sleep(remaining if remaining > 0 else 0)
+                        if remaining > 0:
+                            await asyncio.sleep(remaining)
                     except Exception as inner_e:
                         logger.error(f"Error inside controller loop: {str(inner_e)}")
                         logger.debug(traceback.format_exc())
-                        raise  # Re-raise to be caught by outer except
+                        raise
         except KeyboardInterrupt:
             logger.info("Received KeyboardInterrupt, shutting down gracefully.")
         except Exception as e:
@@ -107,21 +100,15 @@ async def controller(planner, hz=1000, robot=None, puppet=None):
 
                 planner.update()
 
-                command_positions: Dict[str, Union[int, Degree]] = (
-                    planner.get_planner_commands()
-                )
-                command_positions_rad: Dict[str, Union[int, Radian]] = {
-                    k: math.radians(v) for k, v in command_positions.items()
-                }
-
-                await puppet.set_joint_angles(command_positions_rad)
+                sim_commands = planner.get_simulation_commands()
+                await puppet.set_joint_angles(sim_commands)
 
                 hz_counter.update()
 
                 elapsed = time.perf_counter() - start
                 remaining = 1 / hz - elapsed
-                await asyncio.sleep(remaining if remaining > 0 else 0)
-
+                if remaining > 0:
+                    await asyncio.sleep(remaining)
         except KeyboardInterrupt:
             logger.info("Received KeyboardInterrupt, shutting down gracefully.")
         except Exception as e:
@@ -150,7 +137,7 @@ async def main():
     logger.info("Running in real mode..." if args.real else "Running in sim mode...")
 
     try:
-        await controller(planner, hz=1000, robot=robot, puppet=puppet)
+        await controller(planner, hz=100, robot=robot, puppet=puppet)
     except Exception as e:
         logger.error(f"Fatal error in main loop: {str(e)}", exc_info=True)
 
