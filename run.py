@@ -72,13 +72,21 @@ async def controller(planner, hz=100, robot=None, puppet=None):
                             planner.get_planner_commands()
                         )
 
-                        if command_positions:
-                            await robot.set_command_positions(command_positions)
-                        if puppet is not None:
-                            sim_commands = planner.get_simulation_commands()
-                            await puppet.set_joint_angles(sim_commands)
+                        async def control_real() -> None:
+                            if command_positions:
+                                await robot.set_command_positions(command_positions)
 
-                        hz_counter.update()
+                        async def control_sim() -> None:
+                            if puppet is not None:
+                                sim_commands = planner.get_simulation_commands()
+                                await puppet.set_joint_angles(sim_commands)
+
+                        await asyncio.gather(
+                            control_real(),
+                            control_sim(),
+                        )
+
+                        await hz_counter.update()
 
                         elapsed = time.perf_counter() - start
                         remaining = 1 / hz - elapsed
@@ -103,7 +111,7 @@ async def controller(planner, hz=100, robot=None, puppet=None):
                 sim_commands = planner.get_simulation_commands()
                 await puppet.set_joint_angles(sim_commands)
 
-                hz_counter.update()
+                await hz_counter.update()
 
                 elapsed = time.perf_counter() - start
                 remaining = 1 / hz - elapsed
@@ -140,7 +148,6 @@ async def main():
         await controller(planner, hz=100, robot=robot, puppet=puppet)
     except Exception as e:
         logger.error(f"Fatal error in main loop: {str(e)}", exc_info=True)
-
 
 if __name__ == "__main__":
     asyncio.run(main())
