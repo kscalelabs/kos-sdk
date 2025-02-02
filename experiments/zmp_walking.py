@@ -1,5 +1,6 @@
 import math
-
+from typing import List, Dict, Union
+from unit_types import Degree, Radian
 
 joint_to_actuator_id = {
     # Left arm
@@ -26,7 +27,7 @@ joint_to_actuator_id = {
     "right_ankle": 45,
 }
 
-class ZMPWalkingController:
+class ZMPWalkingPlanner:
     def __init__(self, enable_lateral_motion=True):
         # Parameter to control lateral movements
         self.enable_lateral_motion = enable_lateral_motion
@@ -250,7 +251,7 @@ class ZMPWalkingController:
         angles["left_hip_yaw"] = 0.0
         angles["right_hip_yaw"] = 0.0
 
-        angles["left_hip_roll"] = self.K1[0]
+        angles["left_hip_roll"] = -self.K1[0]
         angles["left_hip_pitch"] = -self.K0[0] + -self.hip_pitch_offset
         angles["left_knee"] = self.H[0]
         angles["left_ankle"] = self.A0[0]
@@ -273,23 +274,12 @@ class ZMPWalkingController:
 
         return angles
 
-
-
-
-def get_controller_commands(angles_dict):
-    """
-    Convert each angle (in radians) to a pykos command dictionary.
-    Here we do a naive 1 rad -> ~57 deg.
-    In reality, you'll likely need gear ratio, zero offset, sign flips, etc.
-    """
-    cmds = []
-    for joint_name, angle_radians in angles_dict.items():
-        if joint_name not in joint_to_actuator_id:
-            continue
-        actuator_id = joint_to_actuator_id[joint_name]
-        angle_degrees = math.degrees(angle_radians)
-        if actuator_id in [32]:
-            angle_degrees = -angle_degrees
-
-        cmds.append({"actuator_id": actuator_id, "position": angle_degrees})
-    return cmds
+    def get_planner_commands(self) -> Dict[str, Union[int, Degree]]:
+        angles = self.add_offsets()
+        cmds = {}
+        for joint_name, angle_radians in angles.items():
+            if joint_name not in joint_to_actuator_id:
+                continue
+            angle_degrees = math.degrees(angle_radians)
+            cmds[joint_name] = angle_degrees
+        return cmds

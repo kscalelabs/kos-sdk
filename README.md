@@ -35,6 +35,11 @@ kscale robots urdf download zbot-v2
 ```
 
 ## Usage
+`robot.py` defines the interface for the robot and setup the connection to the robot and sending commands to the robot.
+`experiments/` defines the planner classes and programs that run the robot.
+`run.py` is the main script that runs the robot in real or simulation mode.
+`telemetry.py` is used to collect data from the robot.
+`unit_types.py` defines the unit types for the robot.
 
 ## Contributing
 

@@ -1,22 +1,47 @@
+"""
+Interface for running the robot in real or simulation mode.
+
+Contribute:
+Add planner classes to the experiments directory and then add them to the get_planner function.
+Every planner class should have a get_planner_commands method that returns a dictionary of joint names and their target positions in degrees.
+
+Usage:
+python run.py --real
+python run.py --sim
+python run.py --real --sim
+"""
+
 from robot import RobotInterface
+from ks_digital_twin.puppet.mujoco_puppet import MujocoPuppet
+
+import math
+from loguru import logger
+import argparse
 import asyncio
 import time
-import argparse
-import logging
-from ks_digital_twin.puppet.mujoco_puppet import MujocoPuppet
-from experiments.zmp_walking import ZMPWalkingController
+
+from typing import Dict, Union
+from unit_types import Degree, Radian
+
 import telemetry
 
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+
+from experiments.zmp_walking import ZMPWalkingPlanner
+
+
+########################################################
+# TODO: ADD YOUR PLANNER CLASSES HERE
+########################################################
 
 def get_planner(planner_name):
     if planner_name == "zmp":
-        return ZMPWalkingController(enable_lateral_motion=True)
+        return ZMPWalkingPlanner(enable_lateral_motion=True)
     else:
         raise ValueError(f"Unsupported planner: {planner_name}")
+    
+########################################################
 
-async def run_planner_loop(planner, hz=1000, robot=None, puppet=None):
+async def controller(planner, hz=1000, robot=None, puppet=None):
     hz_counter = telemetry.HzCounter(interval=1 / hz)  
 
     if robot is not None:
@@ -37,16 +62,18 @@ async def run_planner_loop(planner, hz=1000, robot=None, puppet=None):
                 while True:
                     start = time.perf_counter()
                     
-                    feedback_positions = await robot.feedback_positions()
-                    logger.info(f"Feedback positions: {feedback_positions}")
+                    feedback_positions : Dict[str, Union[int, Degree]] = await robot.get_feedback_positions_only()
 
                     planner.update(feedback_positions)
-                    command_positions = planner.get_planner_commands()
+
+                    command_positions : Dict[str, Union[int, Degree]] = planner.get_planner_commands()
+                    
+                    command_positions_rad : Dict[str, Union[int, Radian]] = {k: math.radians(v) for k, v in command_positions.items()}
 
                     if command_positions:
-                        await robot.command_positions(command_positions)
-                    if puppet is not None and command_positions:
-                        await puppet.set_joint_angles(command_positions)
+                        await robot.set_command_positions(command_positions)
+                    if puppet is not None and command_positions_rad:
+                        await puppet.set_joint_angles(command_positions_rad)
 
                     hz_counter.update()
                     
@@ -57,26 +84,29 @@ async def run_planner_loop(planner, hz=1000, robot=None, puppet=None):
         except KeyboardInterrupt:
             logger.info("Received KeyboardInterrupt, shutting down gracefully.")
         except Exception as e:
-            logger.error("Error in real robot loop: %s", e)
+            logger.error(f"Error in real robot loop: {str(e)}", exc_info=True)
     else:
         try:
             while True:
                 start = time.perf_counter()
                 
                 planner.update()
-                command_positions = planner.get_planner_commands()
 
-                if puppet is not None and command_positions:
-                    await puppet.set_joint_angles(command_positions)
+                command_positions : Dict[str, Union[int, Degree]] = planner.get_planner_commands()
+                command_positions_rad : Dict[str, Union[int, Radian]] = {k: math.radians(v) for k, v in command_positions.items()}
+
+                await puppet.set_joint_angles(command_positions_rad)                            
+
                 hz_counter.update()
                 
                 elapsed = time.perf_counter() - start
                 remaining = 1 / hz - elapsed
                 await asyncio.sleep(remaining if remaining > 0 else 0)
+
         except KeyboardInterrupt:
             logger.info("Received KeyboardInterrupt, shutting down gracefully.")
         except Exception as e:
-            logger.error("Error in simulation loop: %s", e)
+            logger.error(f"Error in simulation loop: {str(e)}", exc_info=True)
 
 async def main():
     parser = argparse.ArgumentParser()
@@ -96,9 +126,9 @@ async def main():
     logger.info("Running in real mode..." if args.real else "Running in sim mode...")
     
     try:
-        await run_planner_loop(planner, hz=1000, robot=robot, puppet=puppet)
+        await controller(planner, hz=1000, robot=robot, puppet=puppet)
     except Exception as e:
-        logger.error("Fatal error in main loop: %s", e)
+        logger.error(f"Fatal error in main loop: {str(e)}", exc_info=True)
 
 if __name__ == "__main__":
     asyncio.run(main())

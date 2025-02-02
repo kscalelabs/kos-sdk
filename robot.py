@@ -1,4 +1,9 @@
 from pykos import KOS
+
+from unit_types import Degree, Radian
+from typing import Any, Dict, Union
+
+import subprocess
 from loguru import logger
 
 JOINT_TO_ID = {
@@ -31,36 +36,55 @@ JOINT_TO_ID = {
 
 
 class RobotInterface:
-    def __init__(self, ip):
-        self.ip = ip
+    def __init__(self, ip: str) -> None:
+        self.ip: str = ip
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> "RobotInterface":
+        print(f"Checking connection to robot at {self.ip}")
+        self.check_connection()
         self.kos = KOS(ip=self.ip)
         await self.kos.__aenter__()
         return self
 
-    async def __aexit__(self, *args):
+    async def __aexit__(self, *args: Any) -> None:
         await self.kos.__aexit__(*args)
 
-    async def configure_actuators(self):
+    def check_connection(self) -> None:
+        """Checks the connection to the robot."""
+        logger.info("Checking connection to robot...")
+        try:
+            subprocess.run(
+                ["ping", "-c", "1", self.ip],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=True
+            )
+            logger.info("Successfully pinged robot.")
+        except subprocess.CalledProcessError:
+            logger.error(f"Could not ping robot at {self.ip}")
+            raise ConnectionError("Robot connection failed.")
+
+    async def configure_actuators(self) -> None:
         for actuator_id in JOINT_TO_ID.values():
             logger.info(f"Enabling torque for actuator {actuator_id}")
             await self.kos.actuator.configure_actuator(
                 actuator_id=actuator_id, kp=32, kd=32, torque_enabled=True
             )
 
-    async def homing_actuators(self):
+    async def homing_actuators(self) -> None:
         for actuator_id in JOINT_TO_ID.values():
             logger.info(f"Setting actuator {actuator_id} to 0 position")
             await self.kos.actuator.command_actuators([{"actuator_id": actuator_id, "position": 0}])
+    
+    async def set_command_positions(self, positions: Dict[str, Union[int, Degree]]) -> None:
+        await self.kos.actuator.command_actuators([
+            {"actuator_id": JOINT_TO_ID[name], "position": pos}
+            for name, pos in positions.items()
+        ])
 
-    async def command_positions(self, positions):
-        if positions:
-            await self.kos.actuator.command_actuators(positions)
-
-    async def feedback_state(self):
+    async def get_feedback_state(self) -> Any:
         return await self.kos.actuator.get_actuators_state(list(JOINT_TO_ID.values()))
 
-    async def feedback_positions(self):
-        feedback_state = await self.feedback_state()
-        return [state.position for state in feedback_state.states]
+    async def get_feedback_positions_only(self) -> Dict[str, Union[int, Degree]]:
+        feedback_state = await self.get_feedback_state()
+        return {state.name: state.position for state in feedback_state.states}
