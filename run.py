@@ -10,13 +10,13 @@ import telemetry
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-def get_controller(controller_name):
-    if controller_name == "zmp":
+def get_planner(planner_name):
+    if planner_name == "zmp":
         return ZMPWalkingController(enable_lateral_motion=True)
     else:
-        raise ValueError(f"Unsupported controller: {controller_name}")
+        raise ValueError(f"Unsupported planner: {planner_name}")
 
-async def run_controller_loop(controller, hz=1000, robot=None, puppet=None):
+async def run_planner_loop(planner, hz=1000, robot=None, puppet=None):
     hz_counter = telemetry.HzCounter(interval=1 / hz)  
 
     if robot is not None:
@@ -40,8 +40,8 @@ async def run_controller_loop(controller, hz=1000, robot=None, puppet=None):
                     feedback_positions = await robot.feedback_positions()
                     logger.info(f"Feedback positions: {feedback_positions}")
 
-                    controller.update(feedback_positions)
-                    command_positions = controller.get_controller_commands()
+                    planner.update(feedback_positions)
+                    command_positions = planner.get_planner_commands()
 
                     if command_positions:
                         await robot.command_positions(command_positions)
@@ -63,8 +63,8 @@ async def run_controller_loop(controller, hz=1000, robot=None, puppet=None):
             while True:
                 start = time.perf_counter()
                 
-                controller.update()
-                command_positions = controller.get_commands()
+                planner.update()
+                command_positions = planner.get_planner_commands()
 
                 if puppet is not None and command_positions:
                     await puppet.set_joint_angles(command_positions)
@@ -83,7 +83,7 @@ async def main():
     parser.add_argument("--real", action="store_true", help="Use PyKOS to command actual actuators.")
     parser.add_argument("--sim", action="store_true", help="Also send commands to Mujoco simulation.")
     parser.add_argument("--ip", default="192.168.42.1", help="IP address of the robot.")
-    parser.add_argument("--controller", default="zmp", help="Name of the controller to use.")
+    parser.add_argument("--planner", default="zmp", help="Name of the planner to use.")
     args = parser.parse_args()
 
     ip_address = args.ip if args.real else None
@@ -92,11 +92,11 @@ async def main():
     robot = RobotInterface(ip=ip_address) if args.real else None
     puppet = MujocoPuppet(mjcf_name) if args.sim else None
 
-    controller = get_controller(args.controller)
+    planner = get_planner(args.planner)
     logger.info("Running in real mode..." if args.real else "Running in sim mode...")
     
     try:
-        await run_controller_loop(controller, hz=1000, robot=robot, puppet=puppet)
+        await run_planner_loop(planner, hz=1000, robot=robot, puppet=puppet)
     except Exception as e:
         logger.error("Fatal error in main loop: %s", e)
 

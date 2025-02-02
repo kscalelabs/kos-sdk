@@ -1,11 +1,32 @@
 import math
 
-class ZMPWalkingController:
-    """
-    ZMP-based walking logic, refactored to remove references to MuJoCo
-    and instead call pykos to directly move actuators.
-    """
 
+joint_to_actuator_id = {
+    # Left arm
+    "left_shoulder_yaw": 11,
+    "left_shoulder_pitch": 12,
+    "left_elbow_yaw": 13,
+    "left_gripper": 14,
+    # Right arm
+    "right_shoulder_yaw": 21,
+    "right_shoulder_pitch": 22,
+    "right_elbow_yaw": 23,
+    "right_gripper": 24,
+    # Left leg
+    "left_hip_yaw": 31,
+    "left_hip_roll": 32,
+    "left_hip_pitch": 33,
+    "left_knee": 34,
+    "left_ankle": 35,
+    # Right leg
+    "right_hip_yaw": 41,
+    "right_hip_roll": 42,
+    "right_hip_pitch": 43,
+    "right_knee": 44,
+    "right_ankle": 45,
+}
+
+class ZMPWalkingController:
     def __init__(self, enable_lateral_motion=True):
         # Parameter to control lateral movements
         self.enable_lateral_motion = enable_lateral_motion
@@ -118,10 +139,6 @@ class ZMPWalkingController:
         self.lateral_offset += adjustment
 
     def update(self, feedback_positions=None):
-        """
-        Update the internal state machine and foot positions each timestep.
-        Now incorporates a virtual balance adjustment loop using the kinematic model.
-        """
         if self.gait_phase == 0:
             # Ramping down from initial_leg_height to nominal_leg_height
             if self.initial_leg_height > self.nominal_leg_height + 0.1:
@@ -257,30 +274,7 @@ class ZMPWalkingController:
         return angles
 
 
-joint_to_actuator_id = {
-    # Left arm
-    "left_shoulder_yaw": 11,
-    "left_shoulder_pitch": 12,
-    "left_elbow_yaw": 13,
-    "left_gripper": 14,
-    # Right arm
-    "right_shoulder_yaw": 21,
-    "right_shoulder_pitch": 22,
-    "right_elbow_yaw": 23,
-    "right_gripper": 24,
-    # Left leg
-    "left_hip_yaw": 31,
-    "left_hip_roll": 32,
-    "left_hip_pitch": 33,
-    "left_knee": 34,
-    "left_ankle": 35,
-    # Right leg
-    "right_hip_yaw": 41,
-    "right_hip_roll": 42,
-    "right_hip_pitch": 43,
-    "right_knee": 44,
-    "right_ankle": 45,
-}
+
 
 def get_controller_commands(angles_dict):
     """
