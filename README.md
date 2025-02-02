@@ -8,6 +8,7 @@
 ## Requirements
 
 - Milk-V Image with kos version 0.6.1
+- Conda
 - Python 3.11 with pykos version 0.7.1
 
 

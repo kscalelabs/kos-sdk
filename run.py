@@ -19,6 +19,7 @@ from loguru import logger
 import argparse
 import asyncio
 import time
+import traceback
 
 from typing import Dict, Union
 from unit_types import Degree, Radian
@@ -61,32 +62,40 @@ async def controller(planner, hz=1000, robot=None, puppet=None):
                     await asyncio.sleep(1)
 
                 while True:
-                    start = time.perf_counter()
+                    try:
+                        start = time.perf_counter()
 
-                    feedback_positions: Dict[
-                        str, Union[int, Degree]
-                    ] = await robot.get_feedback_positions_only()
+                        feedback_positions: Dict[
+                            str, Union[int, Degree]
+                        ] = await robot.get_feedback_positions_only()
+                        logger.debug(f"Feedback positions: {feedback_positions}")
 
-                    planner.update(feedback_positions)
+                        planner.update(feedback_positions)
+                        logger.debug("Planner updated with feedback positions.")
 
-                    command_positions: Dict[str, Union[int, Degree]] = (
-                        planner.get_planner_commands()
-                    )
+                        command_positions: Dict[str, Union[int, Degree]] = planner.get_planner_commands()
+                        logger.debug(f"Command positions: {command_positions}")
 
-                    if command_positions:
-                        await robot.set_command_positions(command_positions)
-                    if puppet is not None and command_positions:
-                        command_positions_rad: Dict[str, Union[int, Radian]] = {
-                            k: math.radians(v) for k, v in command_positions.items()
-                        }
-                        await puppet.set_joint_angles(command_positions_rad)
+                        if command_positions:
+                            await robot.set_command_positions(command_positions)
+                            logger.debug("Set command positions on robot.")
+                        if puppet is not None and command_positions:
+                            command_positions_rad: Dict[str, Union[int, Radian]] = {
+                                k: math.radians(v) for k, v in command_positions.items()
+                            }
+                            await puppet.set_joint_angles(command_positions_rad)
+                            logger.debug("Set joint angles on puppet.")
 
-                    hz_counter.update()
+                        hz_counter.update()
 
-                    elapsed = time.perf_counter() - start
-                    remaining = 1 / hz - elapsed
+                        elapsed = time.perf_counter() - start
+                        remaining = 1 / hz - elapsed
 
-                    await asyncio.sleep(remaining if remaining > 0 else 0)
+                        await asyncio.sleep(remaining if remaining > 0 else 0)
+                    except Exception as inner_e:
+                        logger.error(f"Error inside controller loop: {str(inner_e)}")
+                        logger.debug(traceback.format_exc())
+                        raise  # Re-raise to be caught by outer except
         except KeyboardInterrupt:
             logger.info("Received KeyboardInterrupt, shutting down gracefully.")
         except Exception as e:
