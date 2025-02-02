@@ -1,14 +1,18 @@
 # Z-Bot Demos
 
 ## Overview
-This repo contains demos for the Z-Bot and includes a controller interface for real and simulation for easy testing, creating, and deploying different planners, controllers, and skillit skills while ensuring the same interface for the robot and ground truth in MuJoCo.
+
+Unified interface and telemtry system for both real and sim robots to make it easy to test, develop, and deploy different planners, policies, and Skilit skills in MuJoCo digital twin (ground truth) and real robot. The goal is to create reliable and replicable demos.
+
 
 ## Features
-- Abstracted digital twin and Skillit packages
-- Common controller interface for real and simulation
-- Modular planners (e.g., ZMP Walking)
-- Real-time telemetry and logging
-- Robot initialization and configuration
+
+1. Digital Twin - MuJoCo is the ground truth. Deploy and check scripts in MuJoCo before deploying onto real robot. Check if there's a MuJoCo and physical robot mismatch.
+2. Controller interface - 50HZ getting feedback and sending commands, to real robot and sim robot while managing telemetry.
+3. Planner interface - ZMP, CV leaf picking, RL walking, Xbox controller. Input: Feedback state -> Ouput: command state.
+4. Telemetry - Async log: Actuator position, current, torque, temperature, errors. Command per second, frequency, communication status.
+5. Scripts creation - Record and play skills using the controller and intialization inteface with the Skillit library. 
+6. Robot test, config, and initalization - Minimize failure points by testing connection, actuator states, set to the same starting position, and adding necessary offsets
 
 Unfinished features:
 - Skillit interface
@@ -19,7 +23,6 @@ Unfinished features:
 ## Requirements
 
 - Milk-V Image with kos version 0.6.1
-- Conda
 - Python 3.11 with pykos version 0.7.1
 
 
@@ -48,13 +51,23 @@ kscale robots urdf download zbot-v2
 
 ## Usage
 
+Add planner classes to the experiments directory and then add them to the get_planner function. Every planner class should have a get_planner_commands method that returns a dictionary of joint names and their target positions in degrees.
+
+Usage:
+```
+python run.py --real # only real robot via PyKOS
+
+python run.py --sim # only simulation via Mujoco
+
+python run.py --real --sim # real robot and simulation
+```
+
+## Architecture
 `robot.py` - Interface for the robot and setup the connection to the robot and sending commands to the robot.
 `experiments/` - Random experiments and demos.
 `planners/` - Defines the planner classes and programs that run the robot. You can add your own planners to this folder.
 `run.py` - Controller interface for real and simulation.
 `telemetry.py` - Collects data from the robot.
-
-## Architecture
 
 
 ## License
