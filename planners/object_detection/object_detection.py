@@ -32,7 +32,7 @@ class DetectionConfig:
     def __init__(self):
         # Detection parameters
         self.process_interval = 3      # Process every Nth frame for performance
-        self.conf_threshold = 0.6      # Minimum confidence for valid detections
+        self.conf_threshold = 0.5      # Minimum confidence for valid detections
         self.detection_persistence = 5  # Number of frames to keep detections
         self.smoothing_alpha = 0.7     # Smoothing factor (0.7 = 70% previous + 30% new)
         
