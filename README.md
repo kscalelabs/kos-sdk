@@ -2,7 +2,7 @@
 
 ## Overview
 
-Unified interface and telemtry system for both real and sim robots to make it easy to test, develop, and deploy different planners, policies, and Skilit skills in MuJoCo digital twin (ground truth) and real robot. The goal is to create reliable and replicable demos.
+Unified interface and telemetry system for both real and sim robots to make it easy to test, develop, and deploy different planners, policies, and Skilit skills in MuJoCo digital twin (ground truth) and real robot. The goal is to create reliable and replicable demos.
 
 
 ## Features
