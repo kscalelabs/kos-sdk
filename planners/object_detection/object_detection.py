@@ -16,45 +16,58 @@ from aiortc import (
 )
 from av import VideoFrame
 
-# Configure logging
+# Configure logging to suppress ffmpeg warnings
 logging.getLogger("ffmpeg").setLevel(logging.ERROR)
 
-# Constants
+# Server configuration for WebRTC stream
 SERVER_URL = "http://10.33.85.5:8083/stream/s1/channel/0/webrtc?uuid=s1&channel=0"
-MODEL_PATH = 'yolo11n.pt'
+MODEL_PATH = 'yolo11n.pt'  # Path to YOLO model weights
 
 class DetectionConfig:
-    """Configuration for object detection and display."""
+    """Configuration parameters for object detection and display.
+    
+    This class centralizes all adjustable parameters for the detection system,
+    making it easier to tune the system's behavior.
+    """
     def __init__(self):
         # Detection parameters
-        self.process_interval = 3
-        self.conf_threshold = 0.6
-        self.detection_persistence = 5
-        self.smoothing_alpha = 0.7
+        self.process_interval = 3      # Process every Nth frame for performance
+        self.conf_threshold = 0.6      # Minimum confidence for valid detections
+        self.detection_persistence = 5  # Number of frames to keep detections
+        self.smoothing_alpha = 0.7     # Smoothing factor (0.7 = 70% previous + 30% new)
         
         # Display settings
-        self.display_width = 960
-        self.display_height = 540
-        self.inference_size = 640
+        self.display_width = 960       # Output video width
+        self.display_height = 540      # Output video height
+        self.inference_size = 640      # Input size for YOLO model
         
-        # Camera parameters
-        self.focal_length = 500
-        self.known_width = 600
+        # Camera parameters for distance calculation
+        self.focal_length = 500        # Camera focal length in pixels
+        self.known_width = 600         # Reference object width in mm
         
-        # Colors
-        self.line_color = (0, 255, 255)  # BGR yellow
-        self.box_color = (0, 255, 0)     # BGR green
-        self.text_color = (255, 255, 255) # BGR white
+        # Visualization colors (in BGR format)
+        self.line_color = (0, 255, 255)    # Yellow for navigation lines
+        self.box_color = (0, 255, 0)       # Green for bounding boxes
+        self.text_color = (255, 255, 255)  # White for text
 
 class NavigationInfo:
-    """Container for navigation-related calculations."""
+    """Container for navigation-related measurements.
+    
+    Stores calculated distances and angles to detected objects,
+    providing structured access to navigation data.
+    """
     def __init__(self, distance: float, bearing: float, vertical_angle: float, center: Tuple[int, int]):
-        self.distance = distance
-        self.bearing = bearing
-        self.vertical_angle = vertical_angle
-        self.center = center
+        self.distance = distance          # Distance to object in mm
+        self.bearing = bearing            # Horizontal angle to object (negative=left, positive=right)
+        self.vertical_angle = vertical_angle  # Vertical angle to object (negative=up, positive=down)
+        self.center = center             # Object center coordinates (x, y)
 
 class VideoDisplay(VideoStreamTrack):
+    """Main class for video processing and object detection.
+    
+    Handles real-time video stream processing, object detection,
+    and visualization of detection results with navigation information.
+    """
     def __init__(self, track: MediaStreamTrack) -> None:
         """Initialize the video display track with YOLO detection.
 
@@ -66,31 +79,42 @@ class VideoDisplay(VideoStreamTrack):
         self.config = DetectionConfig()
         self.model = YOLO(MODEL_PATH)
         
-        # State tracking
-        self.frame_count = 0
-        self.last_detections = []
-        self.last_detection_frame = 0
-        self.prev_boxes = {}
-        self.current_target = None
+        # State tracking variables
+        self.frame_count = 0              # Counter for processed frames
+        self.last_detections = []         # Store recent valid detections
+        self.last_detection_frame = 0     # Frame number of last detection
+        self.prev_boxes = {}              # Store previous box positions for smoothing
+        self.current_target = None        # Current navigation target
         
         # Navigation reference points
-        self.horizon_line_y = self.config.display_height // 2
-        self.center_x = self.config.display_width // 2
+        self.horizon_line_y = self.config.display_height // 2  # Horizontal center line
+        self.center_x = self.config.display_width // 2         # Vertical center line
 
     def calculate_navigation_info(self, box: np.ndarray) -> NavigationInfo:
-        """Calculate distance and bearing to detected object."""
+        """Calculate distance and angles to detected object.
+        
+        Uses similar triangles principle for distance calculation and
+        trigonometry for angle calculations.
+        
+        Args:
+            box: Bounding box coordinates [x1, y1, x2, y2]
+            
+        Returns:
+            NavigationInfo object with distance and angle measurements
+        """
         x1, y1, x2, y2 = map(int, box)
         
-        # Distance calculation using similar triangles
+        # Calculate distance using similar triangles principle:
+        # real_width / distance = pixel_width / focal_length
         object_width_pixels = x2 - x1
         distance = (self.config.known_width * self.config.focal_length) / object_width_pixels
         
-        # Bearing calculation
+        # Calculate horizontal bearing (negative = left, positive = right)
         box_center_x = (x1 + x2) // 2
         pixels_from_center = box_center_x - self.center_x
         bearing = math.degrees(math.atan2(pixels_from_center, self.config.focal_length))
         
-        # Vertical angle calculation
+        # Calculate vertical angle (negative = up, positive = down)
         box_bottom_y = y2
         pixels_from_horizon = box_bottom_y - self.horizon_line_y
         vertical_angle = math.degrees(math.atan2(pixels_from_horizon, self.config.focal_length))
@@ -98,7 +122,18 @@ class VideoDisplay(VideoStreamTrack):
         return NavigationInfo(distance, bearing, vertical_angle, (box_center_x, box_bottom_y))
 
     def smooth_detection_box(self, new_box: np.ndarray, class_id: int) -> np.ndarray:
-        """Apply exponential smoothing to detection box coordinates."""
+        """Apply exponential smoothing to box coordinates to reduce jitter.
+        
+        Smooths detection boxes over time using exponential moving average:
+        smooth = alpha * previous + (1 - alpha) * new
+        
+        Args:
+            new_box: New detection box coordinates
+            class_id: Class ID to track different objects separately
+            
+        Returns:
+            Smoothed box coordinates
+        """
         if class_id not in self.prev_boxes:
             self.prev_boxes[class_id] = new_box
             return new_box
