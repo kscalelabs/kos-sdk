@@ -30,7 +30,6 @@ JOINT_TO_ID = {
 }
 
 
-
 class RobotInterface:
     def __init__(self, ip):
         self.ip = ip
@@ -47,7 +46,7 @@ class RobotInterface:
         for actuator_id in JOINT_TO_ID.values():
             logger.info(f"Enabling torque for actuator {actuator_id}")
             await self.kos.actuator.configure_actuator(
-                actuator_id=actuator_id, kp=32, kd=32, max_torque=80, torque_enabled=True
+                actuator_id=actuator_id, kp=32, kd=32, torque_enabled=True
             )
 
     async def homing_actuators(self):
@@ -55,6 +54,13 @@ class RobotInterface:
             logger.info(f"Setting actuator {actuator_id} to 0 position")
             await self.kos.actuator.command_actuators([{"actuator_id": actuator_id, "position": 0}])
 
-    async def send_commands(self, commands):
-        if commands:
-            await self.kos.actuator.command_actuators(commands)
+    async def command_positions(self, positions):
+        if positions:
+            await self.kos.actuator.command_actuators(positions)
+
+    async def feedback_state(self):
+        return await self.kos.actuator.get_actuators_state(list(JOINT_TO_ID.values()))
+
+    async def feedback_positions(self):
+        feedback_state = await self.feedback_state()
+        return [state.position for state in feedback_state.states]

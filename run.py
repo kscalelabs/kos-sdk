@@ -19,32 +19,34 @@ def get_controller(controller_name):
 async def run_controller_loop(controller, hz=1000, robot=None, puppet=None):
     hz_counter = telemetry.HzCounter(interval=1 / hz)  
 
-
     if robot is not None:
-        # REAL ROBOT or SIMULATION + REAL ROBOT
-        async with robot:
-            await robot.configure_actuators()
+        try:
+            async with robot:
+                await robot.configure_actuators()
 
-            for i in range(3, 0, -1):
-                logger.info(f"Homing actuators in {i}...")
-                await asyncio.sleep(1)
-                
-            await robot.zero_actuators()
+                for i in range(3, 0, -1):
+                    logger.info(f"Homing actuators in {i}...")
+                    await asyncio.sleep(1)
+                    
+                await robot.homing_actuators()
 
-            for i in range(3, 0, -1):
-                logger.info(f"Starting in {i}...")
-                await asyncio.sleep(1)
-            try:
+                for i in range(3, 0, -1):
+                    logger.info(f"Starting in {i}...")
+                    await asyncio.sleep(1)
+
                 while True:
                     start = time.perf_counter()
                     
-                    controller.update()
-                    commands = controller.get_commands()
+                    feedback_positions = await robot.feedback_positions()
+                    logger.info(f"Feedback positions: {feedback_positions}")
 
-                    if commands:
-                        await robot.send_commands(commands)
-                    if puppet is not None and commands:
-                        await puppet.set_joint_angles(commands)
+                    controller.update(feedback_positions)
+                    command_positions = controller.get_controller_commands()
+
+                    if command_positions:
+                        await robot.command_positions(command_positions)
+                    if puppet is not None and command_positions:
+                        await puppet.set_joint_angles(command_positions)
 
                     hz_counter.update()
                     
@@ -52,27 +54,29 @@ async def run_controller_loop(controller, hz=1000, robot=None, puppet=None):
                     remaining = 1 / hz - elapsed
 
                     await asyncio.sleep(remaining if remaining > 0 else 0)
-            except KeyboardInterrupt:
-                logger.info("Shutting down gracefully.")
+        except KeyboardInterrupt:
+            logger.info("Received KeyboardInterrupt, shutting down gracefully.")
+        except Exception as e:
+            logger.error("Error in real robot loop: %s", e)
     else:
-        # SIMULATION ONLY
         try:
             while True:
                 start = time.perf_counter()
                 
                 controller.update()
-                commands = controller.get_commands()
+                command_positions = controller.get_commands()
 
-                if puppet is not None and commands:
-                    await puppet.set_joint_angles(commands)
-                    
+                if puppet is not None and command_positions:
+                    await puppet.set_joint_angles(command_positions)
                 hz_counter.update()
                 
                 elapsed = time.perf_counter() - start
                 remaining = 1 / hz - elapsed
                 await asyncio.sleep(remaining if remaining > 0 else 0)
         except KeyboardInterrupt:
-            logger.info("Shutting down gracefully.")
+            logger.info("Received KeyboardInterrupt, shutting down gracefully.")
+        except Exception as e:
+            logger.error("Error in simulation loop: %s", e)
 
 async def main():
     parser = argparse.ArgumentParser()
@@ -90,7 +94,11 @@ async def main():
 
     controller = get_controller(args.controller)
     logger.info("Running in real mode..." if args.real else "Running in sim mode...")
-    await run_controller_loop(controller, hz=1000, robot=robot, puppet=puppet)
+    
+    try:
+        await run_controller_loop(controller, hz=1000, robot=robot, puppet=puppet)
+    except Exception as e:
+        logger.error("Fatal error in main loop: %s", e)
 
 if __name__ == "__main__":
     asyncio.run(main())

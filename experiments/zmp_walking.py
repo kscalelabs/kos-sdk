@@ -117,7 +117,7 @@ class ZMPWalkingController:
         # Update the lateral_offset value to help steer the CoM
         self.lateral_offset += adjustment
 
-    def update(self):
+    def update(self, feedback_positions=None):
         """
         Update the internal state machine and foot positions each timestep.
         Now incorporates a virtual balance adjustment loop using the kinematic model.
@@ -228,11 +228,7 @@ class ZMPWalkingController:
             else:
                 self.step_cycle_counter += 1
 
-    def get_commands(self):
-        """
-        Return a dictionary with all the joint angles in radians.
-        For each joint name, we store the needed angle in radians.
-        """
+    def add_offsets(self):
         angles = {}
         angles["left_hip_yaw"] = 0.0
         angles["right_hip_yaw"] = 0.0
@@ -286,7 +282,7 @@ joint_to_actuator_id = {
     "right_ankle": 45,
 }
 
-def angles_to_pykos_commands(angles_dict):
+def get_controller_commands(angles_dict):
     """
     Convert each angle (in radians) to a pykos command dictionary.
     Here we do a naive 1 rad -> ~57 deg.
