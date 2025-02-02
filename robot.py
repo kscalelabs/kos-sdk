@@ -40,7 +40,6 @@ class RobotInterface:
         self.ip: str = ip
 
     async def __aenter__(self) -> "RobotInterface":
-        print(f"Checking connection to robot at {self.ip}")
         self.check_connection()
         self.kos = KOS(ip=self.ip)
         await self.kos.__aenter__()
@@ -50,8 +49,6 @@ class RobotInterface:
         await self.kos.__aexit__(*args)
 
     def check_connection(self) -> None:
-        """Checks the connection to the robot."""
-        logger.info("Checking connection to robot...")
         try:
             subprocess.run(
                 ["ping", "-c", "1", self.ip],
@@ -59,7 +56,7 @@ class RobotInterface:
                 stderr=subprocess.DEVNULL,
                 check=True
             )
-            logger.info("Successfully pinged robot.")
+            logger.success(f"Successfully pinged robot at {self.ip}")
         except subprocess.CalledProcessError:
             logger.error(f"Could not ping robot at {self.ip}")
             raise ConnectionError("Robot connection failed.")

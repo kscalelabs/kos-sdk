@@ -25,9 +25,7 @@ from unit_types import Degree, Radian
 
 import telemetry
 
-
 from experiments.zmp_walking import ZMPWalkingPlanner
-
 
 ########################################################
 # TODO: ADD YOUR PLANNER CLASSES HERE
@@ -68,11 +66,10 @@ async def controller(planner, hz=1000, robot=None, puppet=None):
 
                     command_positions : Dict[str, Union[int, Degree]] = planner.get_planner_commands()
                     
-                    command_positions_rad : Dict[str, Union[int, Radian]] = {k: math.radians(v) for k, v in command_positions.items()}
-
                     if command_positions:
                         await robot.set_command_positions(command_positions)
-                    if puppet is not None and command_positions_rad:
+                    if puppet is not None and command_positions:
+                        command_positions_rad : Dict[str, Union[int, Radian]] = {k: math.radians(v) for k, v in command_positions.items()}
                         await puppet.set_joint_angles(command_positions_rad)
 
                     hz_counter.update()

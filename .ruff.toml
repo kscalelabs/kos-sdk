@@ -1,0 +1,13 @@
+[tool.ruff]
+# Select the rules you want to enforce
+select = ["E", "F", "W", "C90"]
+
+# Specify files or directories to exclude
+exclude = [
+    "venv",
+    "__pycache__",
+    "build",
+    "dist",
+]
+
+line-length = 88
