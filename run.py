@@ -72,11 +72,20 @@ async def controller(planner, hz=100, robot=None, puppet=None):
                             planner.get_planner_commands()
                         )
 
-                        if command_positions:
-                            await robot.set_command_positions(command_positions)
-                        if puppet is not None:
-                            sim_commands = planner.get_simulation_commands()
-                            await puppet.set_joint_angles(sim_commands)
+                        async def control_real() -> None:
+                            if command_positions:
+                                await robot.set_command_positions(command_positions)
+
+                        async def control_sim() -> None:
+                            if puppet is not Nnoe:
+                                sim_commands = planner.get_simulation_commands()
+                                await puppet.set_joint_angles(sim_commands)
+
+                        # Await the two async functions simultaneously to avoid blocking.
+                        await asyncio.gather(
+                            control_real(),
+                            control_sim(),
+                        )
 
                         hz_counter.update()
 
