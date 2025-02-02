@@ -1,6 +1,6 @@
 from pykos import KOS
 
-from unit_types import Degree, Radian
+from unit_types import Degree
 from typing import Any, Dict, Union
 
 import subprocess
@@ -12,20 +12,17 @@ JOINT_TO_ID = {
     "left_shoulder_pitch": 12,
     "left_elbow_yaw": 13,
     "left_gripper": 14,
-
     # Right arm
     "right_shoulder_yaw": 21,
     "right_shoulder_pitch": 22,
     "right_elbow_yaw": 23,
     "right_gripper": 24,
-
     # Left leg
     "left_hip_yaw": 31,
     "left_hip_roll": 32,
     "left_hip_pitch": 33,
     "left_knee": 34,
     "left_ankle": 35,
-
     # Right leg
     "right_hip_yaw": 41,
     "right_hip_roll": 42,
@@ -54,7 +51,7 @@ class RobotInterface:
                 ["ping", "-c", "1", self.ip],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
-                check=True
+                check=True,
             )
             logger.success(f"Successfully pinged robot at {self.ip}")
         except subprocess.CalledProcessError:
@@ -71,13 +68,19 @@ class RobotInterface:
     async def homing_actuators(self) -> None:
         for actuator_id in JOINT_TO_ID.values():
             logger.info(f"Setting actuator {actuator_id} to 0 position")
-            await self.kos.actuator.command_actuators([{"actuator_id": actuator_id, "position": 0}])
-    
-    async def set_command_positions(self, positions: Dict[str, Union[int, Degree]]) -> None:
-        await self.kos.actuator.command_actuators([
-            {"actuator_id": JOINT_TO_ID[name], "position": pos}
-            for name, pos in positions.items()
-        ])
+            await self.kos.actuator.command_actuators(
+                [{"actuator_id": actuator_id, "position": 0}]
+            )
+
+    async def set_command_positions(
+        self, positions: Dict[str, Union[int, Degree]]
+    ) -> None:
+        await self.kos.actuator.command_actuators(
+            [
+                {"actuator_id": JOINT_TO_ID[name], "position": pos}
+                for name, pos in positions.items()
+            ]
+        )
 
     async def get_feedback_state(self) -> Any:
         return await self.kos.actuator.get_actuators_state(list(JOINT_TO_ID.values()))

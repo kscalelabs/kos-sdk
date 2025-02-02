@@ -31,16 +31,19 @@ from experiments.zmp_walking import ZMPWalkingPlanner
 # TODO: ADD YOUR PLANNER CLASSES HERE
 ########################################################
 
+
 def get_planner(planner_name):
     if planner_name == "zmp":
         return ZMPWalkingPlanner(enable_lateral_motion=True)
     else:
         raise ValueError(f"Unsupported planner: {planner_name}")
-    
+
+
 ########################################################
 
+
 async def controller(planner, hz=1000, robot=None, puppet=None):
-    hz_counter = telemetry.HzCounter(interval=1 / hz)  
+    hz_counter = telemetry.HzCounter(interval=1 / hz)
 
     if robot is not None:
         try:
@@ -50,7 +53,7 @@ async def controller(planner, hz=1000, robot=None, puppet=None):
                 for i in range(3, 0, -1):
                     logger.info(f"Homing actuators in {i}...")
                     await asyncio.sleep(1)
-                    
+
                 await robot.homing_actuators()
 
                 for i in range(3, 0, -1):
@@ -59,21 +62,27 @@ async def controller(planner, hz=1000, robot=None, puppet=None):
 
                 while True:
                     start = time.perf_counter()
-                    
-                    feedback_positions : Dict[str, Union[int, Degree]] = await robot.get_feedback_positions_only()
+
+                    feedback_positions: Dict[
+                        str, Union[int, Degree]
+                    ] = await robot.get_feedback_positions_only()
 
                     planner.update(feedback_positions)
 
-                    command_positions : Dict[str, Union[int, Degree]] = planner.get_planner_commands()
-                    
+                    command_positions: Dict[str, Union[int, Degree]] = (
+                        planner.get_planner_commands()
+                    )
+
                     if command_positions:
                         await robot.set_command_positions(command_positions)
                     if puppet is not None and command_positions:
-                        command_positions_rad : Dict[str, Union[int, Radian]] = {k: math.radians(v) for k, v in command_positions.items()}
+                        command_positions_rad: Dict[str, Union[int, Radian]] = {
+                            k: math.radians(v) for k, v in command_positions.items()
+                        }
                         await puppet.set_joint_angles(command_positions_rad)
 
                     hz_counter.update()
-                    
+
                     elapsed = time.perf_counter() - start
                     remaining = 1 / hz - elapsed
 
@@ -86,16 +95,20 @@ async def controller(planner, hz=1000, robot=None, puppet=None):
         try:
             while True:
                 start = time.perf_counter()
-                
+
                 planner.update()
 
-                command_positions : Dict[str, Union[int, Degree]] = planner.get_planner_commands()
-                command_positions_rad : Dict[str, Union[int, Radian]] = {k: math.radians(v) for k, v in command_positions.items()}
+                command_positions: Dict[str, Union[int, Degree]] = (
+                    planner.get_planner_commands()
+                )
+                command_positions_rad: Dict[str, Union[int, Radian]] = {
+                    k: math.radians(v) for k, v in command_positions.items()
+                }
 
-                await puppet.set_joint_angles(command_positions_rad)                            
+                await puppet.set_joint_angles(command_positions_rad)
 
                 hz_counter.update()
-                
+
                 elapsed = time.perf_counter() - start
                 remaining = 1 / hz - elapsed
                 await asyncio.sleep(remaining if remaining > 0 else 0)
@@ -105,10 +118,15 @@ async def controller(planner, hz=1000, robot=None, puppet=None):
         except Exception as e:
             logger.error(f"Error in simulation loop: {str(e)}", exc_info=True)
 
+
 async def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--real", action="store_true", help="Use PyKOS to command actual actuators.")
-    parser.add_argument("--sim", action="store_true", help="Also send commands to Mujoco simulation.")
+    parser.add_argument(
+        "--real", action="store_true", help="Use PyKOS to command actual actuators."
+    )
+    parser.add_argument(
+        "--sim", action="store_true", help="Also send commands to Mujoco simulation."
+    )
     parser.add_argument("--ip", default="192.168.42.1", help="IP address of the robot.")
     parser.add_argument("--planner", default="zmp", help="Name of the planner to use.")
     args = parser.parse_args()
@@ -121,11 +139,12 @@ async def main():
 
     planner = get_planner(args.planner)
     logger.info("Running in real mode..." if args.real else "Running in sim mode...")
-    
+
     try:
         await controller(planner, hz=1000, robot=robot, puppet=puppet)
     except Exception as e:
         logger.error(f"Fatal error in main loop: {str(e)}", exc_info=True)
+
 
 if __name__ == "__main__":
     asyncio.run(main())

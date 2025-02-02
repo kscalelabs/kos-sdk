@@ -1,6 +1,6 @@
 import math
-from typing import List, Dict, Union
-from unit_types import Degree, Radian
+from typing import Dict, Union
+from unit_types import Degree
 
 joint_to_actuator_id = {
     # Left arm
@@ -27,6 +27,7 @@ joint_to_actuator_id = {
     "right_ankle": 45,
 }
 
+
 class ZMPWalkingPlanner:
     def __init__(self, enable_lateral_motion=True):
         # Parameter to control lateral movements
@@ -51,7 +52,9 @@ class ZMPWalkingPlanner:
         self.stance_foot_index = 0  # 0 or 1
         self.step_cycle_length = 4
         self.step_cycle_counter = 0
-        self.lateral_foot_shift = 12  # This controls side-to-side movement during walking
+        self.lateral_foot_shift = (
+            12  # This controls side-to-side movement during walking
+        )
         self.max_foot_lift = 10
         self.double_support_fraction = 0.2
         self.current_foot_lift = 0.0
@@ -73,7 +76,7 @@ class ZMPWalkingPlanner:
         # The joint angle arrays
         self.K0 = [0.0, 0.0]  # hip pitch
         self.K1 = [0.0, 0.0]  # hip roll
-        self.H = [0.0, 0.0]   # knee
+        self.H = [0.0, 0.0]  # knee
         self.A0 = [0.0, 0.0]  # ankle pitch
         # A1 is omitted, only 1 DOF ankles
 
@@ -94,7 +97,9 @@ class ZMPWalkingPlanner:
 
         self.K0[side] = gamma + alpha  # hip pitch
         self.H[side] = 2.0 * gamma + 0.3  # knee, increased pitch by adding 0.3 radians
-        ankle_pitch_offset = 0.3  # Increased from 0.2 to 0.4 radians to compensate for forward lean
+        ankle_pitch_offset = (
+            0.3  # Increased from 0.2 to 0.4 radians to compensate for forward lean
+        )
 
         self.A0[side] = gamma - alpha + ankle_pitch_offset  # ankle pitch with offset
 
@@ -148,31 +153,45 @@ class ZMPWalkingPlanner:
                 self.gait_phase = 10
 
             # Keep both feet together
-            self.control_foot_position(-self.hip_forward_offset, 0.0, self.initial_leg_height, 0)
-            self.control_foot_position(-self.hip_forward_offset, 0.0, self.initial_leg_height, 1)
+            self.control_foot_position(
+                -self.hip_forward_offset, 0.0, self.initial_leg_height, 0
+            )
+            self.control_foot_position(
+                -self.hip_forward_offset, 0.0, self.initial_leg_height, 1
+            )
 
         elif self.gait_phase == 10:
             # Idle
-            self.control_foot_position(-self.hip_forward_offset, 0.0, self.nominal_leg_height, 0)
-            self.control_foot_position(-self.hip_forward_offset, 0.0, self.nominal_leg_height, 1)
+            self.control_foot_position(
+                -self.hip_forward_offset, 0.0, self.nominal_leg_height, 0
+            )
+            self.control_foot_position(
+                -self.hip_forward_offset, 0.0, self.nominal_leg_height, 1
+            )
             if self.walking_enabled:
                 self.step_length = 20.0
                 self.gait_phase = 20
 
         elif self.gait_phase in [20, 30]:
-            sin_value = math.sin(math.pi * self.step_cycle_counter / self.step_cycle_length)
+            sin_value = math.sin(
+                math.pi * self.step_cycle_counter / self.step_cycle_length
+            )
             half_cycle = self.step_cycle_length / 2.0
 
             if self.enable_lateral_motion:
                 lateral_shift = self.lateral_foot_shift * sin_value
-                self.lateral_offset = lateral_shift if self.stance_foot_index == 0 else -lateral_shift
+                self.lateral_offset = (
+                    lateral_shift if self.stance_foot_index == 0 else -lateral_shift
+                )
                 self.virtual_balance_adjustment()
             else:
                 self.lateral_offset = 0.0
 
             if self.step_cycle_counter < half_cycle:
                 fraction = self.step_cycle_counter / self.step_cycle_length
-                self.forward_offset[self.stance_foot_index] = self.previous_stance_foot_offset * (1.0 - 2.0 * fraction)
+                self.forward_offset[self.stance_foot_index] = (
+                    self.previous_stance_foot_offset * (1.0 - 2.0 * fraction)
+                )
             else:
                 fraction = 2.0 * self.step_cycle_counter / self.step_cycle_length - 1.0
                 self.forward_offset[self.stance_foot_index] = (
@@ -180,12 +199,20 @@ class ZMPWalkingPlanner:
                 )
 
             if self.gait_phase == 20:
-                if self.step_cycle_counter < (self.double_support_fraction * self.step_cycle_length):
-                    self.forward_offset[self.stance_foot_index ^ 1] = self.previous_swing_foot_offset - (
-                        self.previous_stance_foot_offset - self.forward_offset[self.stance_foot_index]
+                if self.step_cycle_counter < (
+                    self.double_support_fraction * self.step_cycle_length
+                ):
+                    self.forward_offset[self.stance_foot_index ^ 1] = (
+                        self.previous_swing_foot_offset
+                        - (
+                            self.previous_stance_foot_offset
+                            - self.forward_offset[self.stance_foot_index]
+                        )
                     )
                 else:
-                    self.previous_swing_foot_offset = self.forward_offset[self.stance_foot_index ^ 1]
+                    self.previous_swing_foot_offset = self.forward_offset[
+                        self.stance_foot_index ^ 1
+                    ]
                     self.gait_phase = 30
 
             if self.gait_phase == 30:
@@ -193,15 +220,26 @@ class ZMPWalkingPlanner:
                 denom = (1.0 - self.double_support_fraction) * self.step_cycle_length
                 if denom < 1e-8:
                     denom = 1.0
-                frac = (-math.cos(math.pi * (self.step_cycle_counter - start_swing) / denom) + 1.0) / 2.0
-                self.forward_offset[self.stance_foot_index ^ 1] = self.previous_swing_foot_offset + frac * (
-                    self.step_length - self.accumulated_forward_offset - self.previous_swing_foot_offset
+                frac = (
+                    -math.cos(math.pi * (self.step_cycle_counter - start_swing) / denom)
+                    + 1.0
+                ) / 2.0
+                self.forward_offset[self.stance_foot_index ^ 1] = (
+                    self.previous_swing_foot_offset
+                    + frac
+                    * (
+                        self.step_length
+                        - self.accumulated_forward_offset
+                        - self.previous_swing_foot_offset
+                    )
                 )
 
             i = int(self.double_support_fraction * self.step_cycle_length)
             if self.step_cycle_counter > i:
                 self.current_foot_lift = self.max_foot_lift * math.sin(
-                    math.pi * (self.step_cycle_counter - i) / (self.step_cycle_length - i)
+                    math.pi
+                    * (self.step_cycle_counter - i)
+                    / (self.step_cycle_length - i)
                 )
             else:
                 self.current_foot_lift = 0.0
@@ -239,8 +277,12 @@ class ZMPWalkingPlanner:
                 self.stance_foot_index ^= 1
                 self.step_cycle_counter = 1
                 self.accumulated_forward_offset = 0.0
-                self.previous_stance_foot_offset = self.forward_offset[self.stance_foot_index]
-                self.previous_swing_foot_offset = self.forward_offset[self.stance_foot_index ^ 1]
+                self.previous_stance_foot_offset = self.forward_offset[
+                    self.stance_foot_index
+                ]
+                self.previous_swing_foot_offset = self.forward_offset[
+                    self.stance_foot_index ^ 1
+                ]
                 self.current_foot_lift = 0.0
                 self.gait_phase = 20
             else:
