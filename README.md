@@ -55,12 +55,15 @@ Add planner classes to the experiments directory and then add them to the get_pl
 
 Usage:
 ```
-python run.py --real # only real robot via PyKOS
+python run.py --real --planner zmp
 
-python run.py --sim # only simulation via Mujoco
+python run.py --sim --planner zmp 
 
-python run.py --real --sim # real robot and simulation
+python run.py --real --sim 
 ```
+
+
+
 
 ## Architecture
 `robot.py` - Interface for the robot and setup the connection to the robot and sending commands to the robot.

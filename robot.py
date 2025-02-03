@@ -49,6 +49,7 @@ class RobotInterface:
 
     def check_connection(self) -> None:
         try:
+            logger.info(f"Pinging robot at {self.ip}")
             subprocess.run(
                 ["ping", "-c", "1", self.ip],
                 stdout=subprocess.DEVNULL,
@@ -62,10 +63,11 @@ class RobotInterface:
 
     async def configure_actuators(self) -> None:
         for actuator_id in JOINT_TO_ID.values():
-            logger.info(f"Enabling torque for actuator {actuator_id}")
+            logger.info(f"Enabling torque for actuator...")
             await self.kos.actuator.configure_actuator(
                 actuator_id=actuator_id, kp=32, kd=32, torque_enabled=True
             )
+            logger.success(f"Successfully enabled torque for actuator {actuator_id}")
 
     async def homing_actuators(self) -> None:
         for actuator_id in JOINT_TO_ID.values():
@@ -73,6 +75,7 @@ class RobotInterface:
             await self.kos.actuator.command_actuators(
                 [{"actuator_id": actuator_id, "position": 0}]
             )
+            logger.success(f"Successfully set actuator {actuator_id} to 0 position")
 
     async def set_real_command_positions(
         self, positions: Dict[str, Union[int, Degree]]
@@ -86,7 +89,7 @@ class RobotInterface:
     async def get_feedback_state(self) -> Any:
         return await self.kos.actuator.get_actuators_state(list(JOINT_TO_ID.values()))
 
-    async def get_feedback_positions_only(self) -> Dict[str, Union[int, Degree]]:
+    async def get_feedback_positions(self) -> Dict[str, Union[int, Degree]]:
         feedback_state = await self.get_feedback_state()
         return {
             ID_TO_JOINT[state.actuator_id]: state.position

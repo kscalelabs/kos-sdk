@@ -38,9 +38,9 @@ def get_planner(planner_name : str, args : argparse.Namespace):
     if planner_name == "zmp":
         return ZMPWalkingPlanner(enable_lateral_motion=True)
     elif planner_name == "play_skill":
-        return PlaySkill(skill_name=args.play_skill)
+        return PlaySkill(skill_name=args.play_skill, frequency=args.HZ)
     elif planner_name == "record_skill":
-        return RecordSkill()
+        return RecordSkill(skill_name=args.record_skill, frequency=args.HZ)
     else:
         raise ValueError(f"Unsupported planner: {planner_name}")
 
@@ -148,9 +148,15 @@ async def main():
     parser.add_argument(
         "--sim", action="store_true", help="Also send commands to Mujoco simulation."
     )
-    parser.add_argument("--ip", default="192.168.42.1", help="IP address of the robot.")
+    parser.add_argument("--ip", default="192.168.42.1", help="IP address of the roboot.")
+
+    parser.add_argument("--HZ", default=50, help="Frequency of the skill to play.")
+
     parser.add_argument("--planner", default="zmp", help="Name of the planner to use.")
+
     parser.add_argument("--play_skill", default="pickup", help="Name of the skill to play.")
+    parser.add_argument("--record_skill", default=time.strftime("%Y%m%d_%H%M%S_skill"), help="Name of the skill to record.")
+
     args = parser.parse_args()
 
     ip_address = args.ip if args.real else None
@@ -163,7 +169,7 @@ async def main():
     logger.info("Running in real mode..." if args.real else "Running in sim mode...")
 
     try:
-        await controller(planner, hz=100, robot=robot, puppet=puppet)
+        await controller(planner, hz=args.HZ, robot=robot, puppet=puppet)
     except Exception as e:
         logger.error(f"Fatal error in main loop: {str(e)}", exc_info=True)
 
