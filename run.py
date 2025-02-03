@@ -34,15 +34,17 @@ from planners.play_skill import PlaySkill
 # TODO: ADD YOUR PLANNER CLASSES HERE
 ########################################################
 
-def get_planner(planner_name : str, args : argparse.Namespace):
-    if planner_name == "zmp":
-        return ZMPWalkingPlanner(enable_lateral_motion=True)
-    elif planner_name == "play_skill":
-        return PlaySkill(skill_name=args.play_skill, frequency=args.HZ)
-    elif planner_name == "record_skill":
-        return RecordSkill(skill_name=args.record_skill, frequency=args.HZ)
-    else:
+def get_planner(planner_name: str, args: argparse.Namespace):
+    planners = {
+        "zmp": lambda: ZMPWalkingPlanner(enable_lateral_motion=True),
+        "play_skill": lambda: PlaySkill(skill_name=args.play_skill, frequency=args.HZ),
+        "record_skill": lambda: RecordSkill(skill_name=args.record_skill, frequency=args.HZ)
+    }
+    
+    if planner_name not in planners:
         raise ValueError(f"Unsupported planner: {planner_name}")
+        
+    return planners[planner_name]()
 
 
 ########################################################
@@ -79,14 +81,14 @@ async def controller(planner, hz=100, target_hz=100, robot=None, puppet=None):
                         target_commands = hz * elapsed_time
                         should_send = (executed_commands + 1) / target_commands >= 0.95 or (executed_commands + 1) / target_commands <= 1.05  # Allow 5% margin
 
-                        logger.info(f"Should send: {should_send}, {executed_commands/target_commands:.2f}")
+                        # logger.info(f"Should send: {should_send}, {executed_commands/target_commands:.2f}")
                         
                         if not should_send:
                             logger.warning(f"Skipping command send - ratio {executed_commands/target_commands:.2f}")
 
                         # Only get new commands at target_hz rate
                         if command_counter % max(1, round(target_hz/hz)) == 0:
-                            planner.update()
+                            planner.update(robot.get_feedback_state())
                             last_command_positions = planner.get_command_positions()
                         command_counter += 1
 
@@ -97,7 +99,6 @@ async def controller(planner, hz=100, target_hz=100, robot=None, puppet=None):
 
                             async def control_sim() -> None:
                                 if puppet is not None and last_command_positions:
-                                    import math
                                     radian_command_positions: Dict[str, Union[int, Radian]] = {
                                         joint: math.radians(value)
                                         for joint, value in last_command_positions.items()
@@ -134,13 +135,13 @@ async def controller(planner, hz=100, target_hz=100, robot=None, puppet=None):
                 target_commands = hz * elapsed_time
                 should_send = (executed_commands + 1) / target_commands >= 0.95  # Allow 5% margin
                 
-                logger.info(f"Should send: {should_send}, {executed_commands/target_commands:.2f}")
+                # logger.info(f"Should send: {should_send}, {executed_commands/target_commands:.2f}")
                 if not should_send:
                     logger.warning(f"Skipping command send - ratio {executed_commands/target_commands:.2f}")
 
                 # Only get new commands at target_hz rate
                 if command_counter % max(1, round(target_hz/hz)) == 0:
-                    planner.update()
+                    planner.update(last_command_positions)
                     last_command_positions = planner.get_command_positions()
                 command_counter += 1
 
