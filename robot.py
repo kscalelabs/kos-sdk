@@ -73,7 +73,7 @@ class RobotInterface:
         logger.info(f"Enabling soft torque for actuator...")
         for actuator_id in JOINT_TO_ID.values():
             await self.kos.actuator.configure_actuator(
-                actuator_id=actuator_id, kp=10, kd=1, torque_enabled=True
+                actuator_id=actuator_id, torque_enabled=False
             )
             logger.success(f"Successfully enabled torque for actuator {actuator_id}")
 

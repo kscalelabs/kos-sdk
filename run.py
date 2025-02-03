@@ -40,6 +40,7 @@ def get_planner(planner_name: str, args: argparse.Namespace):
         "play_skill": lambda: PlaySkill(skill_name=args.play_skill, frequency=args.HZ),
         "record_skill": lambda: RecordSkill(skill_name=args.record_skill, frequency=args.HZ)
     }
+    logger.info(f"Planner: {planner_name}")
     
     if planner_name not in planners:
         raise ValueError(f"Unsupported planner: {planner_name}")
@@ -63,6 +64,7 @@ async def controller(planner, hz=100, target_hz=100, robot=None, puppet=None, pl
         try:
             async with robot:
                 if planner_name == "record_skill":
+                    logger.info("Configuring actuators for recording skill")
                     await robot.configure_actuators_record()
                 else:
                     await robot.configure_actuators()
@@ -98,7 +100,6 @@ async def controller(planner, hz=100, target_hz=100, robot=None, puppet=None, pl
                         if should_send:
                             async def control_real() -> None:
                                 if last_command_positions:
-                                    logger.info(f"Sending command positions: {last_command_positions}")
                                     await robot.set_real_command_positions(last_command_positions)
 
                             async def control_sim() -> None:

@@ -65,7 +65,7 @@ class PlaySkill:
             logger.error(f"Failed to load skill {skill_name}: {e}")
             self.skill_data = None
 
-    def update(self) -> None:
+    def update(self, feedback_positions: Dict[str, Union[int, Degree]]) -> None:
         """Update interpolation between keyframes."""
         if not self.skill_data or self.current_frame_index >= len(self.skill_data.frames):
             return
