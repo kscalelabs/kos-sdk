@@ -13,9 +13,9 @@ Unified interface and telemetry system for both real and sim robots to make it e
 4. Telemetry - Async log: Actuator position, current, torque, temperature, errors. Command per second, frequency, communication status.
 5. Scripts creation - Record and play skills using the controller and intialization inteface with the Skillit library. 
 6. Robot test, config, and initalization - Minimize failure points by testing connection, actuator states, set to the same starting position, and adding necessary offsets
+7. Skills - Playing and recording actions
 
 Unfinished features:
-- Skillit interface
 - Xbox controller interface
 - Configs and parameters that can be changed while running
 - More demos
@@ -61,8 +61,6 @@ python run.py --sim --planner zmp
 
 python run.py --real --sim 
 ```
-
-
 
 
 ## Architecture
