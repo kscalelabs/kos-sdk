@@ -144,7 +144,7 @@ class ZMPWalkingPlanner:
         # Update the lateral_offset value to help steer the CoM
         self.lateral_offset += adjustment
 
-    def update(self, feedback_positions=None):
+    def update(self, feedback_state: Dict[str, Union[int, Degree]]):
         if self.gait_phase == 0:
             # Ramping down from initial_leg_height to nominal_leg_height
             if self.initial_leg_height > self.nominal_leg_height + 0.1:
