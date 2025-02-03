@@ -50,7 +50,7 @@ def get_planner(planner_name: str, args: argparse.Namespace):
 ########################################################
 
 
-async def controller(planner, hz=100, target_hz=100, robot=None, puppet=None):
+async def controller(planner, hz=100, target_hz=100, robot=None, puppet=None, planner_name: str = "zmp"):
     hz_counter = telemetry.HzCounter(interval=1 / hz)
     period = 1 / target_hz
     next_update = time.perf_counter() + period
@@ -62,7 +62,10 @@ async def controller(planner, hz=100, target_hz=100, robot=None, puppet=None):
     if robot is not None:
         try:
             async with robot:
-                await robot.configure_actuators()
+                if planner_name == "record_skill":
+                    await robot.configure_actuators_record()
+                else:
+                    await robot.configure_actuators()
 
                 for i in range(3, 0, -1):
                     logger.info(f"Homing actuators in {i}...")
@@ -88,13 +91,14 @@ async def controller(planner, hz=100, target_hz=100, robot=None, puppet=None):
 
                         # Only get new commands at target_hz rate
                         if command_counter % max(1, round(target_hz/hz)) == 0:
-                            planner.update(robot.get_feedback_state())
+                            planner.update(await robot.get_feedback_positions())
                             last_command_positions = planner.get_command_positions()
                         command_counter += 1
 
                         if should_send:
                             async def control_real() -> None:
                                 if last_command_positions:
+                                    logger.info(f"Sending command positions: {last_command_positions}")
                                     await robot.set_real_command_positions(last_command_positions)
 
                             async def control_sim() -> None:
@@ -200,7 +204,7 @@ async def main():
     logger.info("Running in real mode..." if args.real else "Running in sim mode...")
 
     try:
-        await controller(planner, hz=args.HZ, target_hz=args.target_HZ, robot=robot, puppet=puppet)
+        await controller(planner, hz=args.HZ, target_hz=args.target_HZ, robot=robot, puppet=puppet, planner_name=args.planner)
     except Exception as e:
         logger.error(f"Fatal error in main loop: {str(e)}", exc_info=True)
 

@@ -196,7 +196,16 @@ class RecordSkill:
                 # Get latest position feedback
                 try:
                     positions = self.position_queue.get_nowait()
-                    self.last_positions = positions
+                    if self.is_sim:
+                        self.last_positions = positions
+                    else:
+                        # Only update angles that have changed by more than 1 degree
+                        if not self.last_positions:
+                            self.last_positions = positions
+                        else:
+                            for joint, new_pos in positions.items():
+                                if joint not in self.last_positions or abs(new_pos - self.last_positions[joint]) > 1:
+                                    self.last_positions[joint] = new_pos
                 except queue.Empty:
                     pass
 
@@ -205,7 +214,7 @@ class RecordSkill:
             except Exception as e:
                 logger.error(f"Error in control loop: {e}")
 
-    def update(self, feedback_state: Dict[str, Union[int, Degree]]) -> None:
+    def update(self, feedback_state: Union[Dict[str, Union[int, Degree]], None]) -> None:
         """Process commands from GUI."""
         self.last_positions = feedback_state
         if feedback_state is None:

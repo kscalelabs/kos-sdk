@@ -69,6 +69,14 @@ class RobotInterface:
             )
             logger.success(f"Successfully enabled torque for actuator {actuator_id}")
 
+    async def configure_actuators_record(self) -> None:
+        logger.info(f"Enabling soft torque for actuator...")
+        for actuator_id in JOINT_TO_ID.values():
+            await self.kos.actuator.configure_actuator(
+                actuator_id=actuator_id, kp=10, kd=1, torque_enabled=True
+            )
+            logger.success(f"Successfully enabled torque for actuator {actuator_id}")
+
     async def homing_actuators(self) -> None:
         for actuator_id in JOINT_TO_ID.values():
             logger.info(f"Setting actuator {actuator_id} to 0 position")
