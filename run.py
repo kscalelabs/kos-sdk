@@ -48,8 +48,14 @@ def get_planner(planner_name : str, args : argparse.Namespace):
 ########################################################
 
 
-async def controller(planner, hz=100, robot=None, puppet=None):
+async def controller(planner, hz=100, target_hz=100, robot=None, puppet=None):
     hz_counter = telemetry.HzCounter(interval=1 / hz)
+    period = 1 / target_hz
+    next_update = time.perf_counter() + period
+    start_time = time.perf_counter()
+    executed_commands = 0
+    last_command_positions = None
+    command_counter = 0
 
     if robot is not None:
         try:
@@ -68,40 +74,50 @@ async def controller(planner, hz=100, robot=None, puppet=None):
 
                 while True:
                     try:
-                        start = time.perf_counter()
+                        current_time = time.perf_counter()
+                        elapsed_time = current_time - start_time
+                        target_commands = hz * elapsed_time
+                        should_send = (executed_commands + 1) / target_commands >= 0.95 or (executed_commands + 1) / target_commands <= 1.05  # Allow 5% margin
 
-                        feedback_positions = await robot.get_feedback_positions()
+                        logger.info(f"Should send: {should_send}, {executed_commands/target_commands:.2f}")
+                        
+                        if not should_send:
+                            logger.warning(f"Skipping command send - ratio {executed_commands/target_commands:.2f}")
 
-                        planner.update(feedback_positions)
-                        command_positions: Dict[str, Union[int, Degree]] = (
-                            planner.get_command_positions()
-                        )
+                        # Only get new commands at target_hz rate
+                        if command_counter % max(1, round(target_hz/hz)) == 0:
+                            planner.update()
+                            last_command_positions = planner.get_command_positions()
+                        command_counter += 1
 
-                        async def control_real() -> None:
-                            if command_positions:
-                                await robot.set_real_command_positions(command_positions)
+                        if should_send:
+                            async def control_real() -> None:
+                                if last_command_positions:
+                                    await robot.set_real_command_positions(last_command_positions)
 
-                        async def control_sim() -> None:
-                            if puppet is not None:
-                                import math
-                                radian_command_positions: Dict[str, Union[int, Radian]] = {
-                                    joint: math.radians(value)
-                                    for joint, value in command_positions.items()
-                                }
-                                await puppet.set_joint_angles(radian_command_positions)
+                            async def control_sim() -> None:
+                                if puppet is not None and last_command_positions:
+                                    import math
+                                    radian_command_positions: Dict[str, Union[int, Radian]] = {
+                                        joint: math.radians(value)
+                                        for joint, value in last_command_positions.items()
+                                    }
+                                    await puppet.set_joint_angles(radian_command_positions)
 
-                        await asyncio.gather(
-                            control_real(),
-                            control_sim(),
-                        )
+                            await asyncio.gather(
+                                control_real(),
+                                control_sim(),
+                            )
+                            executed_commands += 1
 
                         await hz_counter.update()
+                        
+                        # Sleep until next scheduled update
+                        sleep_time = next_update - time.perf_counter()
+                        if sleep_time > 0:
+                            await asyncio.sleep(sleep_time)
+                        next_update += period
 
-                        elapsed = time.perf_counter() - start
-                        remaining = 1 / hz - elapsed
-
-                        if remaining > 0:
-                            await asyncio.sleep(remaining)
                     except Exception as inner_e:
                         logger.error(f"Error inside controller loop: {str(inner_e)}")
                         logger.debug(traceback.format_exc())
@@ -113,27 +129,39 @@ async def controller(planner, hz=100, robot=None, puppet=None):
     else:
         try:
             while True:
-                start = time.perf_counter()
+                current_time = time.perf_counter()
+                elapsed_time = current_time - start_time
+                target_commands = hz * elapsed_time
+                should_send = (executed_commands + 1) / target_commands >= 0.95  # Allow 5% margin
+                
+                logger.info(f"Should send: {should_send}, {executed_commands/target_commands:.2f}")
+                if not should_send:
+                    logger.warning(f"Skipping command send - ratio {executed_commands/target_commands:.2f}")
 
-                planner.update()
+                # Only get new commands at target_hz rate
+                if command_counter % max(1, round(target_hz/hz)) == 0:
+                    planner.update()
+                    last_command_positions = planner.get_command_positions()
+                command_counter += 1
 
-                command_positions: Dict[str, Union[int, Degree]] = (
-                    planner.get_command_positions()
-                )
-
-                if command_positions:
+                if should_send and last_command_positions:
                     radian_command_positions: Dict[str, Union[int, Radian]] = {
                         joint: math.radians(value)
-                        for joint, value in command_positions.items()
+                        for joint, value in last_command_positions.items()
                     }
                     await puppet.set_joint_angles(radian_command_positions)
+                executed_commands += 1
 
                 await hz_counter.update()
 
-                elapsed = time.perf_counter() - start
-                remaining = 1 / hz - elapsed
-                if remaining > 0:
-                    await asyncio.sleep(remaining)
+                # Sleep until next scheduled update
+                sleep_time = next_update - time.perf_counter()
+                if sleep_time > 0:
+                    await asyncio.sleep(sleep_time)
+
+                if should_send:
+                    next_update += period
+
         except KeyboardInterrupt:
             logger.info("Received KeyboardInterrupt, shutting down gracefully.")
         except Exception as e:
@@ -150,7 +178,9 @@ async def main():
     )
     parser.add_argument("--ip", default="192.168.42.1", help="IP address of the roboot.")
 
-    parser.add_argument("--HZ", default=50, help="Frequency of the skill to play.")
+    parser.add_argument("--HZ", type=int, default=50, help="Frequency of the skill to play.")
+    parser.add_argument("--target_HZ", type=int, default=50, help="Target frequency of the skill to play.")
+
 
     parser.add_argument("--planner", default="zmp", help="Name of the planner to use.")
 
@@ -169,7 +199,7 @@ async def main():
     logger.info("Running in real mode..." if args.real else "Running in sim mode...")
 
     try:
-        await controller(planner, hz=args.HZ, robot=robot, puppet=puppet)
+        await controller(planner, hz=args.HZ, target_hz=args.target_HZ, robot=robot, puppet=puppet)
     except Exception as e:
         logger.error(f"Fatal error in main loop: {str(e)}", exc_info=True)
 
