@@ -179,41 +179,6 @@ class RecordSkill:
 
         self.current_positions_queue = self.gui_process.current_positions_queue
 
-    def _control_loop(self):
-        """Robot control loop running in separate thread."""
-        while self.recording:
-            try:
-                # Process any commands from GUI
-                while not self.command_queue.empty():
-                    cmd = self.command_queue.get_nowait()
-                    if cmd[0] == "record":
-                        positions, delay = cmd[1], cmd[2]
-                        frame = Frame(joint_positions=positions, delay=delay)
-                        self.frames.append(frame)
-                        self.position_queue.put(("update_count", len(self.frames)))
-                        logger.info(f"Recorded keyframe {len(self.frames)} with {delay}s delay")
-
-                # Get latest position feedback
-                try:
-                    positions = self.position_queue.get_nowait()
-                    if self.is_sim:
-                        self.last_positions = positions
-                    else:
-                        # Only update angles that have changed by more than 1 degree
-                        if not self.last_positions:
-                            self.last_positions = positions
-                        else:
-                            for joint, new_pos in positions.items():
-                                if joint not in self.last_positions or abs(new_pos - self.last_positions[joint]) > 1:
-                                    self.last_positions[joint] = new_pos
-                except queue.Empty:
-                    pass
-
-                time.sleep(1.0 / self.frequency)  # Control loop rate
-
-            except Exception as e:
-                logger.error(f"Error in control loop: {e}")
-
     def update(self, feedback_state: Union[Dict[str, Union[int, Degree]], None]) -> None:
         """Process commands from GUI."""
         self.last_positions = feedback_state
@@ -225,6 +190,8 @@ class RecordSkill:
                     cmd = self.command_queue.get_nowait()
                     if cmd[0] == "record":
                         positions, delay = cmd[1], cmd[2]
+                        if not self.is_sim:
+                            positions = self.last_positions
                         frame = Frame(joint_positions=positions, delay=delay)
                         self.frames.append(frame)
                         self.position_queue.put(("update_count", len(self.frames)))
