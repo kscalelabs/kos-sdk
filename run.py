@@ -19,6 +19,7 @@ python run.py --real --sim # real robot and simulation
 
 from robot import RobotInterface
 from ks_digital_twin.puppet.mujoco_puppet import MujocoPuppet
+from config import ROBOT_IP, ROBOT_MODEL, DEFAULT_HZ, DEFAULT_TARGET_HZ
 
 from loguru import logger
 import argparse
@@ -263,17 +264,15 @@ async def main():
     parser.add_argument(
         "--sim", action="store_true", help="Also send commands to Mujoco simulation."
     )
-    parser.add_argument(
-        "--ip", default="10.33.11.170", help="IP address of the roboot."
-    )
+    parser.add_argument("--ip", default=ROBOT_IP, help="IP address of the robot.")
 
     parser.add_argument(
-        "--HZ", type=int, default=50, help="Frequency of the skill to play."
+        "--HZ", type=int, default=DEFAULT_HZ, help="Frequency of the skill to play."
     )
     parser.add_argument(
         "--target_HZ",
         type=int,
-        default=50,
+        default=DEFAULT_TARGET_HZ,
         help="Target frequency of the skill to play.",
     )
 

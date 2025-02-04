@@ -2,6 +2,7 @@ import click
 import asyncio
 from robot import RobotInterface, JOINT_TO_ID, ARM_JOINTS, LEG_JOINTS
 from functools import partial, wraps
+from config import ROBOT_IP
 
 
 async def _run_robot_cmd(ip: str, coro_func, success_msg: str):
@@ -13,7 +14,7 @@ async def _run_robot_cmd(ip: str, coro_func, success_msg: str):
 
 def common_options(f):
     """Common options for all commands"""
-    f = click.option("--ip", default="10.33.11.170", help="Robot IP address")(f)
+    f = click.option("--ip", default=ROBOT_IP, help="Robot IP address")(f)
     return f
 
 
