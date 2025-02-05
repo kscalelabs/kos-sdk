@@ -10,16 +10,16 @@ from demos.robot import RobotInterface
 from elevenlabs.client import ElevenLabs
 from elevenlabs import play
 import openai
+from openai import OpenAI
 
 # Load environment variables (including OPENAI_API_KEY)
 load_dotenv()
-openai.api_key = os.getenv("OPENAI_API_KEY")
-# Hardcoded organization ID:
-openai.organization = "org-your-org-id"
-
+openai.api_key = os.getenv("ALI_OPENAI_API_KEY")
+openai.organization = os.getenv("ALI_OPENAI_ORG_ID")
+OPENAI_PROJECT_ID = os.getenv("ALI_OPENAI_PROJECT_ID")
 
 class RobotSpeaker:
-    def __init__(self, ip="10.33.11.170"):
+    def __init__(self, ip="10.33.11.231"):
         self.robot = RobotInterface(ip=ip)
         self.eleven = ElevenLabs()
 
@@ -84,17 +84,28 @@ class RobotSpeaker:
         except Exception as e:
             logger.error(f"Error in display_text: {e}", exc_info=True)
 
-    async def get_emojis_for_text(self, text: str) -> list:
+    def get_emojis_for_text(self, text: str) -> list:
         """
-        Uses GPT-4-o-mini (via OpenAI’s structured outputs) to select one emoji per sentence.
+        Uses GPT-4-o-mini (via OpenAI's structured outputs) to select one emoji per sentence.
         The prompt instructs the model to output a JSON object with a single key "emojis" that is
         an array of single-character strings.
         """
-        def call_openai():
+        logger.info("Entering get_emojis_for_text")
+        try:
             # Instantiate the new client from the new OpenAI interface.
-            client = openai.OpenAI()
+            logger.info("Creating OpenAI client")
+            client = OpenAI(
+                api_key=os.getenv("ALI_OPENAI_API_KEY"),
+                organization=os.getenv("ALI_OPENAI_ORG_ID"),
+                project=os.getenv("ALI_OPENAI_PROJECT_ID")
+            )
+            
+            logger.info("Making API call to OpenAI...")
+            logger.info(f"Using API key: {os.getenv('ALI_OPENAI_API_KEY')[:5]}...")
+            logger.info(f"Using project ID: {os.getenv('ALI_OPENAI_PROJECT_ID')}")
+
             response = client.chat.completions.create(
-                model="gpt-4o-mini-2024-08-06",
+                model="gpt-4o-mini",
                 messages=[
                     {
                         "role": "system",
@@ -125,18 +136,20 @@ class RobotSpeaker:
                         },
                         "strict": True
                     }
-                }
+                },
+                timeout=10
             )
+            
             content = response.choices[0].message.content
+            logger.info(f"Raw content from OpenAI: {content}")
+            
             parsed = json.loads(content)
+            logger.info(f"Successfully parsed JSON response")
+            
             return parsed.get("emojis", [])
-
-        # Run the OpenAI call in a thread to avoid blocking the event loop.
-        emojis = asyncio.run_coroutine_threadsafe(
-            asyncio.to_thread(call_openai), asyncio.get_event_loop()
-        ).result()
-        logger.info(f"Received emojis from GPT-4-o-mini: {emojis}")
-        return emojis
+        except Exception as e:
+            logger.error(f"Error in get_emojis_for_text: {str(e)}", exc_info=True)
+            return ["😕"]  # Return a default emoji on error
 
     async def display_emojis(self, emojis: list, sentences: list):
         """
@@ -179,7 +192,7 @@ class RobotSpeaker:
 
             # Get the emojis from GPT-4-o-mini.
             logger.info("Getting emojis from GPT-4-o-mini...")
-            emojis = await self.get_emojis_for_text(text)
+            emojis = self.get_emojis_for_text(text)
             logger.info(f"Got emojis: {emojis}")
 
             # Split the text into sentences using a simple regex.
@@ -220,7 +233,7 @@ async def main():
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("text", help="Text to speak and display")
-    parser.add_argument("--ip", default="10.33.11.170", help="Robot IP address")
+    parser.add_argument("--ip", default="10.33.11.231", help="Robot IP address")
     parser.add_argument("--voice", default="JBFqnCBsd6RMkjVDRZzb", help="ElevenLabs voice ID")
     args = parser.parse_args()
 
