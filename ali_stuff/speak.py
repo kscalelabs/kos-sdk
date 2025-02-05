@@ -115,13 +115,3 @@ if __name__ == "__main__":
         asyncio.run(main())
     except KeyboardInterrupt:
         logger.info("Program terminated by user") 
-
-# export OPENAI_API_KEY=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
-
-"""
-curl https://api.openai.com/v1/models \
-  -H "Authorization: Bearer $OPENAI_API_KEY" \
-  -H "OpenAI-Organization: org-8NdrDTbGHNZApz8YvYsz3QkJ" \
-  -H "OpenAI-Project: proj_AbcmActGQLWPA7ctVQYuOmJq"
-
-"""
