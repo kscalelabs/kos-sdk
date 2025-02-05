@@ -2,6 +2,7 @@ import os
 from openai import OpenAI
 from dotenv import load_dotenv
 from loguru import logger
+import traceback
 
 # Load environment variables
 load_dotenv()
@@ -19,7 +20,7 @@ try:
     logger.info(f"Using project ID: {os.getenv('ALI_OPENAI_PROJECT_ID')}")
     
     completion = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4o",
         messages=[
             {"role": "system", "content": "You are a helpful assistant."},
             {
@@ -34,3 +35,4 @@ try:
     
 except Exception as e:
     logger.error(f"Error making OpenAI API call: {str(e)}", exc_info=True)
+    logger.error(f"Full traceback:\n{''.join(traceback.format_tb(e.__traceback__))}")
