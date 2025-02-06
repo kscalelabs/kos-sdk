@@ -34,22 +34,46 @@ class SkillData:
 class GUIProcess(Process):
     """A separate process for running the GUI."""
 
-    def __init__(self, skill_name: str, command_queue: Queue, position_queue: Queue):
+    def __init__(
+        self,
+        skill_name: str,
+        command_queue: Queue,
+        position_queue: Queue,
+        current_positions_queue: Queue,
+    ):
         super().__init__()
         self.skill_name = skill_name
         self.command_queue = command_queue
         self.position_queue = position_queue
-        self.current_positions_queue = Queue()
+        self.current_positions_queue = current_positions_queue
         self.daemon = True
+
+    def check_commands(self):
+        try:
+            while True:
+                cmd = self.position_queue.get_nowait()
+                if cmd[0] == "update_count":
+                    self.frame_count_label.config(text=f"Frames: {cmd[1]}")
+                elif cmd[0] == "quit":
+                    self.window.quit()
+                    return
+                elif cmd[0] == "get_positions":
+                    self.current_positions_queue.put(self.robot.get_joint_angles())
+                elif cmd[0] == "update_positions":
+                    # Update GUI with real robot positions
+                    self.robot.set_joint_angles(cmd[1])
+        except queue.Empty:
+            pass
+        self.window.after(10, self.check_commands)
 
     def run(self):
         """Run the GUI in a separate process."""
-        window = tk.Tk()
-        window.title(f"Robot Control - Recording: {self.skill_name}")
-        window.geometry("560x800")
+        self.window = tk.Tk()
+        self.window.title(f"Robot Control - Recording: {self.skill_name}")
+        self.window.geometry("560x800")
 
         # Create notebook for tabs
-        notebook = ttk.Notebook(window)
+        notebook = ttk.Notebook(self.window)
         notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
 
         # Create keyboard control tab with scrollbar
@@ -75,7 +99,7 @@ class GUIProcess(Process):
         canvas.pack(side="left", fill="both", expand=True)
 
         # Initialize keyboard control in the scrollable frame
-        robot = KeyboardActor(
+        self.robot = KeyboardActor(
             joint_names=[
                 "left_hip_yaw",
                 "left_hip_roll",
@@ -108,8 +132,20 @@ class GUIProcess(Process):
         notebook.add(record_frame, text="Recording")
 
         # Frame count label
-        frame_count_label = ttk.Label(record_frame, text="Frames: 0")
-        frame_count_label.pack(pady=10)
+        self.frame_count_label = ttk.Label(record_frame, text="Frames: 0")
+        self.frame_count_label.pack(pady=10)
+
+        # Manual positioning toggle
+        manual_frame = ttk.Frame(record_frame)
+        manual_frame.pack(pady=5)
+        manual_var = tk.BooleanVar(value=False)
+        manual_check = ttk.Checkbutton(
+            manual_frame,
+            text="Manual Positioning (Disable Torque)",
+            variable=manual_var,
+            command=lambda: self.command_queue.put(("manual_mode", manual_var.get())),
+        )
+        manual_check.pack(pady=5)
 
         # Delay selection
         delay_frame = ttk.Frame(record_frame)
@@ -137,7 +173,7 @@ class GUIProcess(Process):
             record_frame,
             text="Record Keyframe",
             command=lambda: self.command_queue.put(
-                ("record", robot.get_joint_angles(), float(delay_var.get()))
+                ("record", self.robot.get_joint_angles(), float(delay_var.get()))
             ),
         )
         record_btn.pack(pady=10)
@@ -151,25 +187,13 @@ class GUIProcess(Process):
         save_btn.pack(pady=10)
 
         # Set up window close handler
-        window.protocol("WM_DELETE_WINDOW", lambda: self.command_queue.put(("quit",)))
+        self.window.protocol(
+            "WM_DELETE_WINDOW", lambda: self.command_queue.put(("quit",))
+        )
 
-        def check_commands():
-            try:
-                while True:
-                    cmd = self.position_queue.get_nowait()
-                    if cmd[0] == "update_count":
-                        frame_count_label.config(text=f"Frames: {cmd[1]}")
-                    elif cmd[0] == "quit":
-                        window.quit()
-                        return
-                    elif cmd[0] == "get_positions":
-                        self.current_positions_queue.put(robot.get_joint_angles())
-            except queue.Empty:
-                pass
-            window.after(10, check_commands)
-
-        window.after(10, check_commands)
-        window.mainloop()
+        # Start command checking
+        self.window.after(10, self.check_commands)
+        self.window.mainloop()
 
 
 class RecordSkill:
@@ -186,35 +210,43 @@ class RecordSkill:
         self.recording = True
         self.last_positions: Dict[str, Union[int, Degree]] = {}
         self.is_sim = False
+        self.manual_mode = False
 
         # Create queues for process communication
         self.command_queue = Queue()
         self.position_queue = Queue()
+        self.current_positions_queue = Queue()
 
         # Start GUI process
         self.gui_process = GUIProcess(
-            skill_name, self.command_queue, self.position_queue
+            skill_name,
+            self.command_queue,
+            self.position_queue,
+            self.current_positions_queue,
         )
         self.gui_process.start()
 
         logger.info(f"Started recording skill: {skill_name}")
 
-        self.current_positions_queue = self.gui_process.current_positions_queue
-
     def update(
         self, feedback_state: Union[Dict[str, Union[int, Degree]], None]
     ) -> None:
-        """Process commands from GUI."""
-        self.last_positions = feedback_state
+        """Process commands from GUI and update state."""
         if feedback_state is None:
             self.is_sim = True
+        else:
+            self.last_positions = feedback_state
+            # Update GUI with real robot positions
+            self.position_queue.put(("update_positions", feedback_state))
+
         if self.recording:
             try:
                 while True:
                     cmd = self.command_queue.get_nowait()
                     if cmd[0] == "record":
                         positions, delay = cmd[1], cmd[2]
-                        if not self.is_sim:
+                        # Use real robot positions if available
+                        if not self.is_sim and self.last_positions:
                             positions = self.last_positions
                         frame = Frame(joint_positions=positions, delay=delay)
                         self.frames.append(frame)
@@ -222,6 +254,13 @@ class RecordSkill:
                         logger.info(
                             f"Recorded keyframe {len(self.frames)} with {delay}s delay"
                         )
+                    elif cmd[0] == "manual_mode":
+                        self.manual_mode = cmd[1]
+                        if not self.is_sim:
+                            self.position_queue.put(("manual_mode", self.manual_mode))
+                            logger.info(
+                                f"Manual mode {'enabled' if self.manual_mode else 'disabled'}"
+                            )
                     elif cmd[0] == "quit":
                         self.save_and_exit()
             except queue.Empty:
@@ -231,18 +270,21 @@ class RecordSkill:
         """Return the current joint positions."""
         if not self.is_sim:
             return self.last_positions
+
         if self.recording:
             self.position_queue.put(("get_positions",))
             try:
-                return self.current_positions_queue.get(timeout=0.1)
+                positions = self.current_positions_queue.get(timeout=0.1)
+                return positions
             except queue.Empty:
                 logger.warning("Timeout getting positions from GUI")
-                return {}
+                return self.last_positions or {}
         return {}
 
     def save_and_exit(self) -> None:
         """Save the recorded skill and close the GUI."""
-        self.save()
+        if self.frames:  # Only save if we have recorded frames
+            self.save()
         self.recording = False
         self.position_queue.put(("quit",))
         self.gui_process.join(timeout=1.0)
@@ -278,3 +320,101 @@ class RecordSkill:
                 self.gui_process.join(timeout=1.0)
                 if self.gui_process.is_alive():
                     self.gui_process.terminate()
+
+
+class KeyboardActor:
+    def __init__(self, joint_names, parent_frame):
+        """Initialize keyboard control for joints.
+
+        Args:
+            joint_names: List of joint names to control
+            parent_frame: Parent tkinter frame to add controls to
+        """
+        self.joint_names = joint_names
+        self.joint_positions = {name: 0.0 for name in joint_names}
+        self.joint_controls = {}
+
+        # Create controls for each joint
+        for name in joint_names:
+            frame = ttk.Frame(parent_frame)
+            frame.pack(fill=tk.X, padx=5, pady=2)
+
+            # Joint label
+            ttk.Label(frame, text=name).pack(side=tk.LEFT, padx=5)
+
+            # Position display
+            pos_var = tk.StringVar(value="0.0")
+            pos_entry = ttk.Entry(frame, textvariable=pos_var, width=8)
+            pos_entry.pack(side=tk.LEFT, padx=5)
+
+            # Control buttons for simulation
+            dec_btn = ttk.Button(
+                frame,
+                text="-10°",
+                width=4,
+                command=lambda n=name, v=pos_var: self._update_joint(n, v, -10),
+            )
+            dec_btn.pack(side=tk.LEFT, padx=2)
+
+            fine_dec_btn = ttk.Button(
+                frame,
+                text="-5°",
+                width=4,
+                command=lambda n=name, v=pos_var: self._update_joint(n, v, -5),
+            )
+            fine_dec_btn.pack(side=tk.LEFT, padx=2)
+
+            fine_inc_btn = ttk.Button(
+                frame,
+                text="+5°",
+                width=4,
+                command=lambda n=name, v=pos_var: self._update_joint(n, v, 5),
+            )
+            fine_inc_btn.pack(side=tk.LEFT, padx=2)
+
+            inc_btn = ttk.Button(
+                frame,
+                text="+10°",
+                width=4,
+                command=lambda n=name, v=pos_var: self._update_joint(n, v, 10),
+            )
+            inc_btn.pack(side=tk.LEFT, padx=2)
+
+            # Store controls
+            self.joint_controls[name] = {
+                "var": pos_var,
+                "entry": pos_entry,
+                "buttons": [dec_btn, fine_dec_btn, fine_inc_btn, inc_btn],
+            }
+
+    def _update_joint(self, name, var, delta):
+        """Update joint position by delta degrees."""
+        try:
+            current = float(var.get())
+            new_pos = current + delta
+            # Clamp to reasonable range
+            new_pos = max(-180, min(180, new_pos))
+            var.set(f"{new_pos:.1f}")
+            self.joint_positions[name] = new_pos
+            # Make sure entry shows the new value
+            self.joint_controls[name]["entry"].delete(0, tk.END)
+            self.joint_controls[name]["entry"].insert(0, f"{new_pos:.1f}")
+        except ValueError:
+            # Reset to 0 if invalid value
+            var.set("0.0")
+            self.joint_positions[name] = 0.0
+
+    def get_joint_angles(self) -> Dict[str, float]:
+        """Get current joint positions."""
+        # Always return the internal position state
+        return self.joint_positions.copy()
+
+    def set_joint_angles(self, positions: Dict[str, float]) -> None:
+        """Set joint positions from external source."""
+        for name, pos in positions.items():
+            if name in self.joint_controls:
+                self.joint_positions[name] = float(pos)
+                self.joint_controls[name]["var"].set(f"{float(pos):.1f}")
+                # Update entry directly
+                self.joint_controls[name]["entry"].delete(0, tk.END)
+                self.joint_controls[name]["entry"].insert(0, f"{float(pos):.1f}")
