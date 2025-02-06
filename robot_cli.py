@@ -2,7 +2,7 @@ import click
 import asyncio
 from robot import RobotInterface, JOINT_TO_ID, ARM_JOINTS, LEG_JOINTS
 from functools import partial, wraps
-from config import ROBOT_IP
+from utils import ROBOT_IP
 
 
 async def _run_robot_cmd(ip: str, coro_func, success_msg: str):

@@ -5,8 +5,6 @@ from typing import Any, Dict, Union, List
 
 import subprocess
 from loguru import logger
-import click
-import asyncio
 
 # Mapping between human-readable joint names and their actuator IDs
 JOINT_TO_ID = {
@@ -112,16 +110,12 @@ class RobotInterface:
             logger.error(f"Could not ping robot at {self.ip}")
             raise ConnectionError("Robot connection failed.")
 
-    async def enable_torque(
-        self, joints: Union[List[str], List[int]], kp: int = 32, kd: int = 32
-    ) -> None:
+    async def enable_torque(self, joints: Union[List[str], List[int]]) -> None:
         """
         Enable torque for specified joints or actuator IDs.
 
         Args:
             joints: List of joint names or actuator IDs
-            kp: Proportional gain for PID control
-            kd: Derivative gain for PID control
         """
         actuator_ids = []
         for joint in joints:
@@ -134,7 +128,7 @@ class RobotInterface:
         for actuator_id in actuator_ids:
             logger.info(f"Enabling torque for actuator {actuator_id}...")
             await self.kos.actuator.configure_actuator(
-                actuator_id=actuator_id, kp=kp, kd=kd, torque_enabled=True
+                actuator_id=actuator_id, kp=32, kd=32, torque_enabled=True
             )
             logger.success(f"Successfully enabled torque for actuator {actuator_id}")
 
@@ -156,29 +150,29 @@ class RobotInterface:
         for actuator_id in actuator_ids:
             logger.info(f"Disabling torque for actuator {actuator_id}...")
             await self.kos.actuator.configure_actuator(
-                actuator_id=actuator_id, kp=0, kd=0, torque_enabled=False
+                actuator_id=actuator_id, kp=32, kd=32, torque_enabled=False
             )
             logger.success(f"Successfully disabled torque for actuator {actuator_id}")
 
-    async def enable_all_torque(self, kp: int = 32, kd: int = 32) -> None:
+    async def enable_all_torque(self) -> None:
         """Enable torque for all actuators"""
-        await self.enable_torque(list(JOINT_TO_ID.keys()), kp, kd)
+        await self.enable_torque(list(JOINT_TO_ID.keys()))
 
     async def disable_all_torque(self) -> None:
         """Disable torque for all actuators"""
         await self.disable_torque(list(JOINT_TO_ID.keys()))
 
-    async def enable_arms_torque(self, kp: int = 32, kd: int = 32) -> None:
+    async def enable_arms_torque(self) -> None:
         """Enable torque for arm joints only"""
-        await self.enable_torque(ARM_JOINTS, kp, kd)
+        await self.enable_torque(ARM_JOINTS)
 
     async def disable_arms_torque(self) -> None:
         """Disable torque for arm joints only"""
         await self.disable_torque(ARM_JOINTS)
 
-    async def enable_legs_torque(self, kp: int = 32, kd: int = 32) -> None:
+    async def enable_legs_torque(self) -> None:
         """Enable torque for leg joints only"""
-        await self.enable_torque(LEG_JOINTS, kp, kd)
+        await self.enable_torque(LEG_JOINTS)
 
     async def disable_legs_torque(self) -> None:
         """Disable torque for leg joints only"""

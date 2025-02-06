@@ -19,7 +19,7 @@ python run.py --real --sim # real robot and simulation
 
 from robot import RobotInterface
 from ks_digital_twin.puppet.mujoco_puppet import MujocoPuppet
-from config import ROBOT_IP, ROBOT_MODEL, DEFAULT_HZ, DEFAULT_TARGET_HZ
+from utils import config, ROBOT_IP, ROBOT_MODEL, DEFAULT_HZ, DEFAULT_TARGET_HZ
 
 from loguru import logger
 import argparse
@@ -93,17 +93,23 @@ async def controller(
                 # Initialize robot
                 await robot.enable_all_torque()  # Enable torque for all joints
 
-                # Countdown before homing
-                for i in range(3, 0, -1):
-                    logger.info(f"Homing actuators in {i}...")
-                    await asyncio.sleep(1)
+                # Only do homing for planners that need it
+                if planner_name in ["zmp"]:
+                    # Countdown before homing
+                    for i in range(3, 0, -1):
+                        logger.info(f"Homing actuators in {i}...")
+                        await asyncio.sleep(1)
 
-                # Set to zero position
-                await robot.homing_actuators()
+                    # Set to zero position
+                    await robot.homing_actuators()
 
-                # Countdown before starting motion
-                for i in range(3, 0, -1):
-                    logger.info(f"Starting in {i}...")
+                    # Countdown before starting motion
+                    for i in range(3, 0, -1):
+                        logger.info(f"Starting in {i}...")
+                        await asyncio.sleep(1)
+                else:
+                    # For record/playback, just wait a moment before starting
+                    logger.info("Starting in 1 second...")
                     await asyncio.sleep(1)
 
                 # Main control loop
@@ -138,6 +144,17 @@ async def controller(
                             )
                             # Update planner with current state
                             planner.update(feedback_state)
+                            # Handle manual mode only for record_skill planner
+                            if planner_name == "record_skill" and getattr(
+                                planner, "manual_mode", False
+                            ):
+                                await robot.disable_all_torque()
+                            elif planner_name == "play_skill" and hasattr(
+                                planner, "needs_torque_enable"
+                            ):
+                                # Only enable torque once at start of playback
+                                if planner.needs_torque_enable():
+                                    await robot.enable_all_torque()
                             # Get new target positions
                             last_command_positions = planner.get_command_positions()
                         command_counter += 1
