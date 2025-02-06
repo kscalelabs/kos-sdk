@@ -19,7 +19,7 @@ python run.py --real --sim # real robot and simulation
 
 from robot import RobotInterface
 from ks_digital_twin.puppet.mujoco_puppet import MujocoPuppet
-from utils import config, ROBOT_IP, ROBOT_MODEL, DEFAULT_HZ, DEFAULT_TARGET_HZ
+from utils import config  # Import dynamic config
 
 from loguru import logger
 import argparse
@@ -281,15 +281,20 @@ async def main():
     parser.add_argument(
         "--sim", action="store_true", help="Also send commands to Mujoco simulation."
     )
-    parser.add_argument("--ip", default=ROBOT_IP, help="IP address of the robot.")
+    parser.add_argument(
+        "--ip", default=config.robot_ip, help="IP address of the robot."
+    )
 
     parser.add_argument(
-        "--HZ", type=int, default=DEFAULT_HZ, help="Frequency of the skill to play."
+        "--HZ",
+        type=int,
+        default=config.default_hz,
+        help="Frequency of the skill to play.",
     )
     parser.add_argument(
         "--target_HZ",
         type=int,
-        default=DEFAULT_TARGET_HZ,
+        default=config.default_target_hz,
         help="Target frequency of the skill to play.",
     )
 
@@ -308,7 +313,7 @@ async def main():
 
     # Setup interfaces based on arguments
     ip_address = args.ip if args.real else None
-    mjcf_name = "zbot-v2"
+    mjcf_name = config.robot_model  # Use dynamic config for robot model
 
     robot = RobotInterface(ip=ip_address) if args.real else None
     puppet = MujocoPuppet(mjcf_name) if args.sim else None
