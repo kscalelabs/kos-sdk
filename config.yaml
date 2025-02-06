@@ -1,0 +1,13 @@
+# Robot network settings
+robot:
+  network:
+    ip: "10.33.11.170"  # Default robot IP
+  model: "zbot-v2"      # Robot model name
+
+# Control settings
+control:
+  hz: 30               # Default control frequency
+  target_hz: 30        # Default target frequency
+  pid:
+    kp: 32            # Default proportional gain
+    kd: 32            # Default derivative gain
