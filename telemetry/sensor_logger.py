@@ -16,7 +16,7 @@ import pykos
 logger = logging.getLogger(__name__)
 
 class SensorLogger:
-    def __init__(self, ip_address: str, actuator_ids: List[int], log_dir: str = "telemetry_logs"):
+    def __init__(self, ip_address: str, actuator_ids: list[int], log_dir: str = "telemetry_logs"):
         """Initialize the sensor logger.
         
         Args:
@@ -27,7 +27,7 @@ class SensorLogger:
         self.ip_address = ip_address
         self.actuator_ids = actuator_ids
         self.log_dir = log_dir
-        self.kos: Optional[pykos.KOS] = None
+        self.kos: pykos.KOS | None = None
         
         # Create log directory if it doesn't exist
         os.makedirs(log_dir, exist_ok=True)
