@@ -7,6 +7,7 @@ import asyncio
 import csv
 import datetime
 import logging
+import argparse
 import os
 from typing import List, Optional
 
@@ -109,13 +110,23 @@ class SensorLogger:
         self.actuator_file.close()
 
 async def main():
-    """Example usage of the SensorLogger."""
-    # Initialize logger with actuator IDs 11, 12, and 13
-    sensor_logger = SensorLogger("10.33.11.170", [11, 12, 13])
+    
+    parser = argparse.ArgumentParser(description='Log sensor data from Z-Bot.')
+    parser.add_argument('--ip', type=str, default="10.33.11.170",
+                       help='IP address of the Z-Bot')
+    parser.add_argument('--duration', type=float, default=10.0,
+                       help='Duration in seconds to log data')
+    parser.add_argument('--actuators', type=int, nargs='+', 
+                       default=[11, 12, 13, 21, 22, 23],
+                       help='List of actuator IDs to monitor')
+    
+    args = parser.parse_args()
+    
+    sensor_logger = SensorLogger(args.ip, args.actuators)
     
     try:
         await sensor_logger.connect()
-        await sensor_logger.log_data(duration_seconds=10.0)
+        await sensor_logger.log_data(duration_seconds=args.duration)
     except Exception as e:
         logger.exception("Error during logging: %s", str(e))
     finally:
