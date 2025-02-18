@@ -20,8 +20,9 @@ from av import VideoFrame
 logging.getLogger("ffmpeg").setLevel(logging.ERROR)
 
 # Server configuration for WebRTC stream
-SERVER_URL = "http://10.33.85.5:8083/stream/s1/channel/0/webrtc?uuid=s1&channel=0"
-MODEL_PATH = 'yolo11n.pt'  # Path to YOLO model weights
+SERVER_URL = "http://10.33.12.37:8083/stream/s1/channel/0/webrtc?uuid=s1&channel=0"
+# Use YOLOv8n model from Ultralytics
+MODEL_NAME = "yolov8n.pt"  # Changed from local path to model name
 
 class DetectionConfig:
     """Configuration parameters for object detection and display.
@@ -77,7 +78,8 @@ class VideoDisplay(VideoStreamTrack):
         super().__init__()
         self.track = track
         self.config = DetectionConfig()
-        self.model = YOLO(MODEL_PATH)
+        # This will automatically download the model if not present
+        self.model = YOLO(MODEL_NAME)
         
         # State tracking variables
         self.frame_count = 0              # Counter for processed frames
