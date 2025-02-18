@@ -19,8 +19,10 @@ from av import VideoFrame
 # Configure logging to suppress ffmpeg warnings
 logging.getLogger("ffmpeg").setLevel(logging.ERROR)
 
+robot_ip = "10.33.12.37"
+
 # Server configuration for WebRTC stream
-SERVER_URL = "http://10.33.12.37:8083/stream/s1/channel/0/webrtc?uuid=s1&channel=0"
+SERVER_URL = f"http://{robot_ip}:8083/stream/s1/channel/0/webrtc?uuid=s1&channel=0"
 # Use YOLOv8n model from Ultralytics
 MODEL_NAME = "yolov8n.pt"  # Changed from local path to model name
 
