@@ -14,6 +14,12 @@ Unified interface and telemetry system for both real and sim robots to make it e
 5. Scripts creation - Record and play skills using the controller and intialization inteface with the Skillit library. 
 6. Robot test, config, and initalization - Minimize failure points by testing connection, actuator states, set to the same starting position, and adding necessary offsets
 7. Skills - Playing and recording actions
+8. Motion module - High-level interface for robot motion control with:
+   - Simple joint control with human-readable joint names
+   - Joint grouping for easier management
+   - Real-time monitoring and state tracking
+   - Visualization tools for performance analysis
+   - Tools for comparing real vs. simulated performance
 
 Unfinished features:
 - Xbox controller interface
@@ -62,13 +68,41 @@ python run.py --sim --planner zmp
 python run.py --real --sim 
 ```
 
+### Robot Selection
+
+You can easily control different robots by specifying the robot type or IP:
+
+```
+# Using predefined robot types
+python run.py --real --robot alum1 --planner zmp
+python run.py --real --robot white --planner zmp
+
+# Or using a custom IP
+python run.py --real --ip 10.33.85.8 --planner zmp
+```
+
+For convenience, you can also use the `run_robot.py` script:
+
+```
+# Control the alum1 robot with the ZMP planner
+./run_robot.py alum1 --planner zmp
+
+# Control the white robot and show simulation
+./run_robot.py white --sim
+```
+
 
 ## Architecture
 `robot.py` - Interface for the robot and setup the connection to the robot and sending commands to the robot.
+`robot_config.py` - Configuration module for robot IP addresses and settings.
+`run_robot.py` - Convenience script for running different robots.
 `experiments/` - Random experiments and demos.
 `planners/` - Defines the planner classes and programs that run the robot. You can add your own planners to this folder.
+`planners/motion.py` - High-level motion control module with joint grouping, monitoring, and testing utilities.
 `run.py` - Controller interface for real and simulation.
 `telemetry.py` - Collects data from the robot.
+`utils/motion_utils.py` - Utilities for working with the motion module.
+`examples/motion_examples/` - Example scripts demonstrating how to use the motion module.
 
 
 ## License
