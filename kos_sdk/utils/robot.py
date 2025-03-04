@@ -1,3 +1,4 @@
+# type: ignore
 """Interface for the robot."""
 
 import subprocess
