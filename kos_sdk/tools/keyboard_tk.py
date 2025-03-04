@@ -45,9 +45,7 @@ class KeyboardActor(ActorRobot):
             btn_frame = ttk.Frame(frame)
             btn_frame.pack(side=tk.RIGHT)
 
-            decrease_btn = ttk.Button(
-                btn_frame, text="-5°", command=lambda n=joint_name: self._update_angle(n, -5.0)
-            )
+            decrease_btn = ttk.Button(btn_frame, text="-5°", command=lambda n=joint_name: self._update_angle(n, -5.0))
             decrease_btn.pack(side=tk.LEFT, padx=2)
 
             fine_decrease_btn = ttk.Button(
@@ -60,9 +58,7 @@ class KeyboardActor(ActorRobot):
             )
             fine_increase_btn.pack(side=tk.LEFT, padx=2)
 
-            increase_btn = ttk.Button(
-                btn_frame, text="+5°", command=lambda n=joint_name: self._update_angle(n, 5.0)
-            )
+            increase_btn = ttk.Button(btn_frame, text="+5°", command=lambda n=joint_name: self._update_angle(n, 5.0))
             increase_btn.pack(side=tk.LEFT, padx=2)
 
             # Store controls
@@ -87,9 +83,7 @@ class KeyboardActor(ActorRobot):
             delta: Amount to change the angle by (in degrees)
         """
         self.current_joint_angles[joint_name] += delta
-        self.joint_controls[joint_name]["value_var"].set(
-            f"{self.current_joint_angles[joint_name]:.1f}°"
-        )
+        self.joint_controls[joint_name]["value_var"].set(f"{self.current_joint_angles[joint_name]:.1f}°")
 
     def _cycle_focus(self, event=None) -> None:
         """Cycle keyboard focus through the joints."""
