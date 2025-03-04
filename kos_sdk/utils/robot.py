@@ -1,6 +1,8 @@
+"""Interface for the robot."""
+
 from pykos import KOS
 
-from unit_types import Degree
+from sdk.utils.unit_types import Degree
 from typing import Any, Dict, Union
 
 import subprocess

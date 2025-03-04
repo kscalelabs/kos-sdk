@@ -1,13 +1,43 @@
-.DS_Store
-.venv
+# .gitignore
 
+# Python
+*.py[oc]
+__pycache__/
+*.egg-info
+.eggs/
+.mypy_cache/*
+.pyre/
+.pytest_cache/
+.ruff_cache/
+.dmypy.json
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Databases
+*.db
+
+# Build artifacts
+*.so
+out*/
+
+# System
+.DS_Store
 __pycache__
 *.pyc
 *.pyo
 *.pyd
 *.pyw
-*.pyz
-
-.ruff_cache
-
-planners/recorded_skills/*
