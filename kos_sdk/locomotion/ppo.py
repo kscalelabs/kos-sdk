@@ -138,7 +138,7 @@ async def main() -> None:
 async def reinforcement_learning_test(kos: pykos.KOS) -> None:
     """Runs reinforcement learning unit tests."""
     # Load policy
-    policy_dir = "assets/model_checkpoints/zbot_rl_policy"
+    policy_dir = "assets/models/ppo"
     session = load_policy(policy_dir)
     input_name = session.get_inputs()[0].name
 
