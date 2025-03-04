@@ -1,4 +1,4 @@
-# KOS SDK 
+# KOS SDK (WIP)
 Software Development Kit (SDK) for KOS robots that bundles together libraries, tools, APIs for developers to build, test, and deploy Z-Bot and K-Bot applications. 
 
 ## Overview
