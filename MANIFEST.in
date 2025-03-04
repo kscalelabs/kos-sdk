@@ -1,1 +1,1 @@
-recursive-include zbot_unit_tests/ *.py *.txt py.typed MANIFEST.in
+recursive-include kos_sdk/ *.py *.txt py.typed MANIFEST.in
