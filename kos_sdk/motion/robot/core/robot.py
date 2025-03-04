@@ -1,6 +1,8 @@
-from typing import Optional, Dict, List, Union
 from dataclasses import dataclass
+from typing import Dict, List, Optional
+
 from pykos import KOS
+
 from .joint import Joint, JointGroup, JointState
 
 # Default mapping from actuator IDs to joint names
@@ -246,7 +248,9 @@ class Robot:
         positions = {name: 0.0 for name in self.joints}
         await self.move(kos, positions)
 
-    async def get_states(self, kos: KOS, joint_names: Optional[List[str]] = None) -> Dict[str, JointState]:
+    async def get_states(
+        self, kos: KOS, joint_names: Optional[List[str]] = None
+    ) -> Dict[str, JointState]:
         """Get current state of specified joints.
 
         Args:
@@ -351,7 +355,9 @@ class Robot:
         """
         return list(self.joints.keys())
 
-    async def start_monitoring(self, kos: KOS, interval: float = 0.1, quiet_mode: bool = False) -> None:
+    async def start_monitoring(
+        self, kos: KOS, interval: float = 0.1, quiet_mode: bool = False
+    ) -> None:
         """Start monitoring joint states at regular intervals.
 
         Args:

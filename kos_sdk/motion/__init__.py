@@ -3,6 +3,6 @@
 
 __version__ = "0.1.0"
 
-from .robot import Robot, RobotConfig, Joint, JointGroup, JointState
+from .robot import Joint, JointGroup, JointState, Robot, RobotConfig
 
 __all__ = ["Robot", "RobotConfig", "Joint", "JointGroup", "JointState"]

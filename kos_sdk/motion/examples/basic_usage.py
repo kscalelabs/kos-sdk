@@ -2,8 +2,11 @@
 """
 Basic example of using the motion library.
 """
+
 import asyncio
+
 from pykos import KOS
+
 from kos_sdk.motion import Robot
 
 

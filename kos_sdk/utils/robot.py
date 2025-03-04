@@ -1,11 +1,14 @@
 """Interface for the robot."""
 
 import subprocess
-from typing import Any, Dict, Union, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 from loguru import logger
 from pykos import KOS
 from sdk.utils.unit_types import Degree
+
+if TYPE_CHECKING:
+    from kos_sdk.motion import Robot
 
 JOINT_TO_ID = {
     # Left arm
@@ -65,13 +68,17 @@ class RobotInterface:
     async def configure_actuators(self) -> None:
         for actuator_id in JOINT_TO_ID.values():
             logger.info("Enabling torque for actuator...")
-            await self.kos.actuator.configure_actuator(actuator_id=actuator_id, kp=32, kd=32, torque_enabled=True)
+            await self.kos.actuator.configure_actuator(
+                actuator_id=actuator_id, kp=32, kd=32, torque_enabled=True
+            )
             logger.success(f"Successfully enabled torque for actuator {actuator_id}")
 
     async def configure_actuators_record(self) -> None:
         logger.info("Enabling soft torque for actuator...")
         for actuator_id in JOINT_TO_ID.values():
-            await self.kos.actuator.configure_actuator(actuator_id=actuator_id, torque_enabled=False)
+            await self.kos.actuator.configure_actuator(
+                actuator_id=actuator_id, torque_enabled=False
+            )
             logger.success(f"Successfully enabled torque for actuator {actuator_id}")
 
     async def homing_actuators(self) -> None:

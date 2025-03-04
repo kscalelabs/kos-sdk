@@ -10,8 +10,9 @@ from tkinter import ttk
 from typing import Dict, List, Union
 
 from loguru import logger
-from planners.keyboard_tk import KeyboardActor
 from unit_types import Degree
+
+from planners.keyboard_tk import KeyboardActor
 
 IS_MACOS = platform.system() == "Darwin"
 
