@@ -222,7 +222,16 @@ class Robot:
                 )
 
         if commands:
-            await kos.actuator.command_actuators(commands)
+            # Type conversion to match the expected API type
+            await kos.actuator.command_actuators(
+                [
+                    {
+                        "actuator_id": int(cmd["actuator_id"]),
+                        "position": cmd["position"],
+                    }
+                    for cmd in commands
+                ]
+            )
 
     async def zero_all(self, kos: KOS, velocity: Optional[float] = None) -> None:
         """Move all joints to zero position.

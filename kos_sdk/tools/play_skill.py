@@ -5,7 +5,8 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional, Union
 
 from loguru import logger
-from unit_types import Degree
+
+from kos_sdk.utils.unit_types import Degree
 
 
 @dataclass
@@ -90,7 +91,13 @@ class PlaySkill:
             for joint in current_frame.joint_positions:
                 current_pos = current_frame.joint_positions[joint]
                 next_pos = next_frame.joint_positions[joint]
-                self.current_positions[joint] = current_pos + (next_pos - current_pos) * t
+                delta = float(next_pos) - float(current_pos)
+                # Since Degree is a NewType of float, we can't use isinstance
+                # Check if the value matches typical degree values (typically within reasonable range)
+                if abs(float(current_pos)) < 360:  # Assume degrees
+                    self.current_positions[joint] = Degree(float(current_pos) + delta * t)
+                else:
+                    self.current_positions[joint] = int(float(current_pos) + delta * t)
 
     def get_command_positions(self) -> Dict[str, Union[int, Degree]]:
         """Get the interpolated joint positions.

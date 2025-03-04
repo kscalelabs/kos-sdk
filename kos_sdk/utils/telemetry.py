@@ -7,7 +7,7 @@ import logging
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List
+from typing import Any, List, Optional, TextIO
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -46,20 +46,20 @@ class TelemetryLogger:
         self.log_dir.mkdir(parents=True, exist_ok=True)
 
         # Will be initialized in start()
-        self.imu_writer = None
-        self.actuator_writer = None
-        self.control_writer = None
-        self.imu_file = None
-        self.actuator_file = None
-        self.control_file = None
-        self.start_time = None
+        self.imu_writer: Any = None
+        self.actuator_writer: Any = None
+        self.control_writer: Any = None
+        self.imu_file: Optional[TextIO] = None
+        self.actuator_file: Optional[TextIO] = None
+        self.control_file: Optional[TextIO] = None
+        self.start_time: Optional[float] = None
         self._is_logging = False
 
         # Performance tracking
         self.last_loop_time = time.time()
         self.loop_times: List[float] = []
 
-    async def start(self):
+    async def start(self) -> None:
         """Start telemetry logging."""
         if self._is_logging:
             return
@@ -118,13 +118,13 @@ class TelemetryLogger:
             ]
         )
 
-        self.start_time = time.time()
+        self.start_time = float(time.time())
         self._is_logging = True
 
         # Start background logging task
         asyncio.create_task(self._log_loop())
 
-    async def stop(self):
+    async def stop(self) -> None:
         """Stop telemetry logging and close files."""
         self._is_logging = False
         if self.imu_file:
@@ -134,7 +134,7 @@ class TelemetryLogger:
         if self.control_file:
             self.control_file.close()
 
-    async def _log_loop(self):
+    async def _log_loop(self) -> None:
         """Background task for continuous logging."""
         while self._is_logging:
             try:
@@ -143,7 +143,7 @@ class TelemetryLogger:
                 logger.error(f"Error in telemetry logging: {e}")
             await asyncio.sleep(0.01)  # 100Hz target rate
 
-    async def _log_single_frame(self):
+    async def _log_single_frame(self) -> None:
         """Log a single frame of telemetry data."""
         timestamp = datetime.datetime.now().isoformat()
 
@@ -155,24 +155,25 @@ class TelemetryLogger:
             quat = await self.kos.imu.get_quaternion()
             cmd_latency = time.time() - cmd_start
 
-            self.imu_writer.writerow(
-                [
-                    timestamp,
-                    imu_euler.roll,
-                    imu_euler.pitch,
-                    imu_euler.yaw,
-                    imu_values.accel_x,
-                    imu_values.accel_y,
-                    imu_values.accel_z,
-                    imu_values.gyro_x,
-                    imu_values.gyro_y,
-                    imu_values.gyro_z,
-                    quat.w,
-                    quat.x,
-                    quat.y,
-                    quat.z,
-                ]
-            )
+            if self.imu_writer:
+                self.imu_writer.writerow(
+                    [
+                        timestamp,
+                        imu_euler.roll,
+                        imu_euler.pitch,
+                        imu_euler.yaw,
+                        imu_values.accel_x,
+                        imu_values.accel_y,
+                        imu_values.accel_z,
+                        imu_values.gyro_x,
+                        imu_values.gyro_y,
+                        imu_values.gyro_z,
+                        quat.w,
+                        quat.x,
+                        quat.y,
+                        quat.z,
+                    ]
+                )
         except Exception as e:
             logger.warning(f"Failed to get IMU data: {e}")
 
@@ -183,20 +184,21 @@ class TelemetryLogger:
             cmd_latency = time.time() - cmd_start
 
             for actuator_id, state in zip(self.actuator_ids, states.states):
-                self.actuator_writer.writerow(
-                    [
-                        timestamp,
-                        actuator_id,
-                        state.position,
-                        state.velocity,
-                        state.torque,
-                        state.current,
-                        state.temperature,
-                        state.voltage,
-                        state.online,
-                        ",".join(state.faults) if state.faults else "",
-                    ]
-                )
+                if self.actuator_writer:
+                    self.actuator_writer.writerow(
+                        [
+                            timestamp,
+                            actuator_id,
+                            state.position,
+                            state.velocity,
+                            state.torque,
+                            state.current,
+                            state.temperature,
+                            state.voltage,
+                            state.online,
+                            ",".join(state.faults) if state.faults else "",
+                        ]
+                    )
         except Exception as e:
             logger.warning(f"Failed to get actuator data: {e}")
 
@@ -211,17 +213,18 @@ class TelemetryLogger:
 
         avg_frequency = 1.0 / (sum(self.loop_times) / len(self.loop_times))
 
-        self.control_writer.writerow(
-            [
-                timestamp,
-                avg_frequency,
-                cmd_latency,
-                cmd_latency,
-            ]  # Using command latency as proxy for gRPC latency
-        )
+        if self.control_writer:
+            self.control_writer.writerow(
+                [
+                    timestamp,
+                    avg_frequency,
+                    cmd_latency,
+                    cmd_latency,
+                ]  # Using command latency as proxy for gRPC latency
+            )
 
 
-def plot_latest_logs(log_dir: str = "telemetry_logs"):
+def plot_latest_logs(log_dir: str = "telemetry_logs") -> None:
     """Plot the most recent telemetry logs."""
     # Find latest log files
     imu_files = sorted(Path(log_dir).glob("imu_*.csv"))
@@ -266,7 +269,7 @@ def plot_latest_logs(log_dir: str = "telemetry_logs"):
     plt.show()
 
 
-def plot_imu_data(fig, gs, imu_data):
+def plot_imu_data(fig: plt.Figure, gs: GridSpec, imu_data: pd.DataFrame) -> None:
     """Plot IMU data in the left column."""
     # Euler Angles
     ax_euler = fig.add_subplot(gs[0, 0])
@@ -302,7 +305,7 @@ def plot_imu_data(fig, gs, imu_data):
     ax_gyro.legend()
 
 
-def plot_control_metrics(fig, gs, control_data):
+def plot_control_metrics(fig: plt.Figure, gs: GridSpec, control_data: pd.DataFrame) -> None:
     """Plot control metrics."""
     ax_control = fig.add_subplot(gs[4, 0])
     ax_control.plot(control_data["time"], control_data["loop_frequency"], label="Loop Frequency")
@@ -317,7 +320,7 @@ def plot_control_metrics(fig, gs, control_data):
     ax_control2.legend(loc="upper right")
 
 
-def plot_actuator_data(fig, gs, actuator_data):
+def plot_actuator_data(fig: plt.Figure, gs: GridSpec, actuator_data: pd.DataFrame) -> None:
     """Plot actuator data in the right column."""
     axes = {
         "position": fig.add_subplot(gs[0, 1]),
@@ -354,7 +357,7 @@ def plot_actuator_data(fig, gs, actuator_data):
 
 
 # Convenience function
-async def log_telemetry(kos: pykos.KOS, actuator_ids: List[int], duration: float):
+async def log_telemetry(kos: pykos.KOS, actuator_ids: List[int], duration: float) -> None:
     """Log telemetry for a specified duration.
 
     Args:

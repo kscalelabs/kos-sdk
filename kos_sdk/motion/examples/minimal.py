@@ -10,7 +10,7 @@ from pykos import KOS
 from kos_sdk.motion import Robot
 
 
-async def main():
+async def main() -> None:
     # Create a robot with default joint mapping
     robot = Robot()
 

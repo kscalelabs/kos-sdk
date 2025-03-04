@@ -5,7 +5,8 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 from loguru import logger
 from pykos import KOS
-from sdk.utils.unit_types import Degree
+
+from kos_sdk.utils.unit_types import Degree
 
 if TYPE_CHECKING:
     from kos_sdk.motion import Robot

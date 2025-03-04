@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional
+from typing import Iterator, Optional
 
 
 @dataclass
@@ -129,10 +129,10 @@ class JointGroup:
                 return joint
         return None
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Joint]:
         return iter(self.joints)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.joints)
 
     def __repr__(self) -> str:

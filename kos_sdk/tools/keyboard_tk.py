@@ -2,16 +2,21 @@
 
 import tkinter as tk
 from tkinter import ttk
-from typing import Dict, Union
+from typing import Any, Dict, List, Optional
 
-from ks_digital_twin.actor.base import ActorRobot
-from unit_types import Degree
+
+class ActorRobot:
+    """Base class for actor robots."""
+
+    def get_joint_angles(self) -> Dict[str, float]:
+        """Get joint angles."""
+        raise NotImplementedError
 
 
 class KeyboardActor(ActorRobot):
     """Actor robot model that allows for keyboard control."""
 
-    def __init__(self, joint_names: list[str], parent_frame: ttk.Frame) -> None:
+    def __init__(self, joint_names: List[str], parent_frame: ttk.Frame) -> None:
         """Initialize the keyboard control interface.
 
         Args:
@@ -20,6 +25,7 @@ class KeyboardActor(ActorRobot):
         """
         self.joint_names = joint_names
         self.current_joint_angles = {name: 0.0 for name in joint_names}
+        self.parent = parent_frame
 
         # Create main frame
         main_frame = ttk.Frame(parent_frame, padding="10")
@@ -45,20 +51,20 @@ class KeyboardActor(ActorRobot):
             btn_frame = ttk.Frame(frame)
             btn_frame.pack(side=tk.RIGHT)
 
-            decrease_btn = ttk.Button(btn_frame, text="-5°", command=lambda n=joint_name: self._update_angle(n, -5.0))
+            decrease_btn = ttk.Button(btn_frame, text="-5°", command=lambda n=joint_name: self._update_angle(n, -5.0))  # type: ignore
             decrease_btn.pack(side=tk.LEFT, padx=2)
 
             fine_decrease_btn = ttk.Button(
-                btn_frame, text="-1°", command=lambda n=joint_name: self._update_angle(n, -1.0)
+                btn_frame, text="-1°", command=lambda n=joint_name: self._update_angle(n, -1.0)  # type: ignore
             )
             fine_decrease_btn.pack(side=tk.LEFT, padx=2)
 
             fine_increase_btn = ttk.Button(
-                btn_frame, text="+1°", command=lambda n=joint_name: self._update_angle(n, 1.0)
+                btn_frame, text="+1°", command=lambda n=joint_name: self._update_angle(n, 1.0)  # type: ignore
             )
             fine_increase_btn.pack(side=tk.LEFT, padx=2)
 
-            increase_btn = ttk.Button(btn_frame, text="+5°", command=lambda n=joint_name: self._update_angle(n, 5.0))
+            increase_btn = ttk.Button(btn_frame, text="+5°", command=lambda n=joint_name: self._update_angle(n, 5.0))  # type: ignore
             increase_btn.pack(side=tk.LEFT, padx=2)
 
             # Store controls
@@ -85,18 +91,22 @@ class KeyboardActor(ActorRobot):
         self.current_joint_angles[joint_name] += delta
         self.joint_controls[joint_name]["value_var"].set(f"{self.current_joint_angles[joint_name]:.1f}°")
 
-    def _cycle_focus(self, event=None) -> None:
+    def _cycle_focus(self, event: Optional[Any] = None) -> None:
         """Cycle keyboard focus through the joints."""
-        focused = self.parent_frame.focus_get()
-        for i, joint_name in enumerate(self.joint_names):
-            if focused in self.joint_controls[joint_name]["buttons"]:
-                next_joint = self.joint_names[(i + 1) % len(self.joint_names)]
-                self.joint_controls[next_joint]["buttons"][0].focus_set()
-                return
-        # If no joint focused, focus first joint
-        self.joint_controls[self.joint_names[0]]["buttons"][0].focus_set()
+        try:
+            root_widget = event.widget.focus_get() if event and hasattr(event, "widget") else None
+            for i, joint_name in enumerate(self.joint_names):
+                if root_widget in self.joint_controls[joint_name]["buttons"]:
+                    next_joint = self.joint_names[(i + 1) % len(self.joint_names)]
+                    self.joint_controls[next_joint]["buttons"][0].focus_set()
+                    return
+            # If no joint focused, focus first joint
+            self.joint_controls[self.joint_names[0]]["buttons"][0].focus_set()
+        except (AttributeError, TypeError):
+            # Fallback if focus handling fails
+            pass
 
-    def get_joint_angles(self) -> Dict[str, Union[int, Degree]]:
+    def get_joint_angles(self) -> Dict[str, float]:
         """Return the current joint angles.
 
         Returns:

@@ -10,7 +10,7 @@ from pykos import KOS
 from kos_sdk.motion import Robot
 
 
-async def main():
+async def main() -> None:
     # Define joint groups (optional)
     groups = {
         "left_arm": ["left_shoulder_yaw", "left_shoulder_pitch", "left_elbow"],
