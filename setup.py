@@ -35,10 +35,4 @@ setup(
     python_requires=">=3.11",
     install_requires=requirements,
     extras_require={"dev": requirements_dev},
-    packages=["kos-sdk"],
-    # entry_points={
-    #     "console_scripts": [
-    #         "zbot_unit_tests.cli:main",
-    #     ],
-    # },
-)
+    packages=["kos_sdk"]
