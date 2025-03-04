@@ -2,10 +2,10 @@
 Software Development Kit (SDK) for KOS robots that bundles together libraries, tools, APIs for developers to build, test, and deploy Z-Bot and K-Bot applications. 
 
 ## Overview
-Pre-built modules for sensors, policies, motion planning, perception, simulation, and tests for rapid prototyping, acceptance testing, and problem diagnosis. 
+Pre-built examples and tests for sensors, policies, motion planning, perception, simulation for rapid prototyping, robot diagnosis and acceptance testing.
 
 ## Features
-- Tests: Comprehensive unit tests for all robot components such as IMU, servos, camera, speaker, microhpone, led.
+- Tests: Unit tests for all robot components such as IMU, servos, camera, speaker, microhpone, led.
 - Simulation: KOS-SIM compatbility. https://github.com/kscalelabs/kos-sim
 - Locomotion: PPO based locomotion. 
 - Manipulation: ACT and IK based manipulation. 
