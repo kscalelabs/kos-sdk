@@ -307,9 +307,7 @@ def plot_control_metrics(fig, gs, control_data):
     ax_control = fig.add_subplot(gs[4, 0])
     ax_control.plot(control_data["time"], control_data["loop_frequency"], label="Loop Frequency")
     ax_control2 = ax_control.twinx()
-    ax_control2.plot(
-        control_data["time"], control_data["command_latency"] * 1000, "r-", label="Command Latency"
-    )
+    ax_control2.plot(control_data["time"], control_data["command_latency"] * 1000, "r-", label="Command Latency")
     ax_control.set_title("Control Performance Metrics")
     ax_control.set_xlabel("Time (s)")
     ax_control.set_ylabel("Frequency (Hz)")
