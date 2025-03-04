@@ -1,0 +1,16 @@
+# requirements.txt
+
+colorlogging
+kscale
+matplotlib
+mujoco
+onnxruntime
+pybullet
+pykos
+aiortc
+opencv-python
+numpy
+requests
+ultralytics
+av
+kos-sim

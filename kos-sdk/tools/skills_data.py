@@ -2,7 +2,7 @@
 
 import json
 from dataclasses import dataclass, field
-from robot import RobotInterface
+from sdk.utils.robot import RobotInterface
 
 @dataclass
 class Frame:
