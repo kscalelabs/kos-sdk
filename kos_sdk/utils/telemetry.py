@@ -145,7 +145,6 @@ class TelemetryLogger:
 
     async def _log_single_frame(self):
         """Log a single frame of telemetry data."""
-        loop_start_time = time.time()
         timestamp = datetime.datetime.now().isoformat()
 
         # Log IMU data
