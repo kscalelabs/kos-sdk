@@ -1,12 +1,11 @@
 """Interface for the robot."""
 
-from pykos import KOS
-
-from sdk.utils.unit_types import Degree
+import subprocess
 from typing import Any, Dict, Union
 
-import subprocess
 from loguru import logger
+from pykos import KOS
+from sdk.utils.unit_types import Degree
 
 JOINT_TO_ID = {
     # Left arm
@@ -65,14 +64,14 @@ class RobotInterface:
 
     async def configure_actuators(self) -> None:
         for actuator_id in JOINT_TO_ID.values():
-            logger.info(f"Enabling torque for actuator...")
+            logger.info("Enabling torque for actuator...")
             await self.kos.actuator.configure_actuator(
                 actuator_id=actuator_id, kp=32, kd=32, torque_enabled=True
             )
             logger.success(f"Successfully enabled torque for actuator {actuator_id}")
 
     async def configure_actuators_record(self) -> None:
-        logger.info(f"Enabling soft torque for actuator...")
+        logger.info("Enabling soft torque for actuator...")
         for actuator_id in JOINT_TO_ID.values():
             await self.kos.actuator.configure_actuator(
                 actuator_id=actuator_id, torque_enabled=False
@@ -82,26 +81,17 @@ class RobotInterface:
     async def homing_actuators(self) -> None:
         for actuator_id in JOINT_TO_ID.values():
             logger.info(f"Setting actuator {actuator_id} to 0 position")
-            await self.kos.actuator.command_actuators(
-                [{"actuator_id": actuator_id, "position": 0}]
-            )
+            await self.kos.actuator.command_actuators([{"actuator_id": actuator_id, "position": 0}])
             logger.success(f"Successfully set actuator {actuator_id} to 0 position")
 
-    async def set_real_command_positions(
-        self, positions: Dict[str, Union[int, Degree]]
-    ) -> None:
+    async def set_real_command_positions(self, positions: Dict[str, Union[int, Degree]]) -> None:
         await self.kos.actuator.command_actuators(
-            [
-                {"actuator_id": JOINT_TO_ID[name], "position": pos}
-                for name, pos in positions.items()
-            ]
+            [{"actuator_id": JOINT_TO_ID[name], "position": pos} for name, pos in positions.items()]
         )
+
     async def get_feedback_state(self) -> Any:
         return await self.kos.actuator.get_actuators_state(list(JOINT_TO_ID.values()))
 
     async def get_feedback_positions(self) -> Dict[str, Union[int, Degree]]:
         feedback_state = await self.get_feedback_state()
-        return {
-            ID_TO_JOINT[state.actuator_id]: state.position
-            for state in feedback_state.states
-        }
+        return {ID_TO_JOINT[state.actuator_id]: state.position for state in feedback_state.states}
