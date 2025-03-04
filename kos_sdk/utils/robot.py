@@ -1,7 +1,7 @@
 """Interface for the robot."""
 
 import subprocess
-from typing import Any, Dict, Union
+from typing import Any, Dict, Union, Optional
 
 from loguru import logger
 from pykos import KOS
@@ -65,17 +65,13 @@ class RobotInterface:
     async def configure_actuators(self) -> None:
         for actuator_id in JOINT_TO_ID.values():
             logger.info("Enabling torque for actuator...")
-            await self.kos.actuator.configure_actuator(
-                actuator_id=actuator_id, kp=32, kd=32, torque_enabled=True
-            )
+            await self.kos.actuator.configure_actuator(actuator_id=actuator_id, kp=32, kd=32, torque_enabled=True)
             logger.success(f"Successfully enabled torque for actuator {actuator_id}")
 
     async def configure_actuators_record(self) -> None:
         logger.info("Enabling soft torque for actuator...")
         for actuator_id in JOINT_TO_ID.values():
-            await self.kos.actuator.configure_actuator(
-                actuator_id=actuator_id, torque_enabled=False
-            )
+            await self.kos.actuator.configure_actuator(actuator_id=actuator_id, torque_enabled=False)
             logger.success(f"Successfully enabled torque for actuator {actuator_id}")
 
     async def homing_actuators(self) -> None:
@@ -95,3 +91,31 @@ class RobotInterface:
     async def get_feedback_positions(self) -> Dict[str, Union[int, Degree]]:
         feedback_state = await self.get_feedback_state()
         return {ID_TO_JOINT[state.actuator_id]: state.position for state in feedback_state.states}
+
+    def to_motion_robot(self, config: Optional[Dict] = None) -> "Robot":
+        """Convert this RobotInterface to the new Motion Robot class.
+
+        Args:
+            config: Optional configuration for the Robot
+
+        Returns:
+            A Motion Robot instance configured with the same joints
+
+        Examples:
+            ```python
+            # Convert to Robot with default configuration
+            robot = robot_interface.to_motion_robot()
+
+            # Convert with custom configuration
+            from kos_sdk.motion import RobotConfig
+            config = RobotConfig(max_torque=50.0)
+            robot = robot_interface.to_motion_robot(config)
+            ```
+        """
+        from kos_sdk.motion import Robot, RobotConfig
+
+        robot_config = None
+        if config:
+            robot_config = RobotConfig(**config)
+
+        return Robot(config=robot_config)

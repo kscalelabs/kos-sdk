@@ -1,6 +1,7 @@
 """Runs reinforcement learning unit tests.
 
-To see a video of the policy running in simulation, look in `assets/model_checkpoints/zbot_rl_policy/policy.mp4`.
+To see a video of the policy running in simulation, look in
+`assets/model_checkpoints/zbot_rl_policy/policy.mp4`.
 
 To see the input actuator positions and output policy actions for each timestep,
 uncomment the `logger.setLevel(logging.DEBUG)` line.
@@ -131,7 +132,9 @@ async def main() -> None:
         async with pykos.KOS("192.168.42.1") as kos:
             await reinforcement_learning_test(kos)
     except Exception:
-        logger.exception("Make sure that the Z-Bot is connected over USB and the IP address is accessible.")
+        logger.exception(
+            "Make sure that the Z-Bot is connected over USB and the IP address is accessible."
+        )
         raise
 
 
