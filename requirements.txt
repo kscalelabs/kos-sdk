@@ -1,8 +1,0 @@
-pykos == 0.7.1
-loguru
-ks-digital-twin
-kscale
-mujoco 
-mujoco-python-viewer
-pybullet
-ruff
