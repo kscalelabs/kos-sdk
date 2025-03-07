@@ -1,5 +1,7 @@
-from typing import Optional, Dict, List, Union
+from typing import Optional, Dict, List, Union, Sequence
 from dataclasses import dataclass
+import asyncio
+import time
 from pykos import KOS
 from .joint import Joint, JointGroup, JointState
 
@@ -535,3 +537,66 @@ class Robot:
         """
         if getattr(self, "_monitoring", False):
             await self.stop_monitoring()
+            
+    async def follow_trajectory(
+        self,
+        kos: KOS,
+        trajectory: Sequence[Dict[str, Dict[str, float]]],
+        timestep: float = 0.1,
+    ) -> None:
+        """Follow a trajectory specified as a sequence of joint positions.
+        
+        Args:
+            kos: KOS client instance
+            trajectory: Sequence of position dictionaries for each timestep
+                        Each element is a dict mapping joint names to a dict of values
+                        (e.g., {"position": 1.0, "velocity": 0.5})
+            timestep: Time in seconds between trajectory points
+            
+        Examples:
+            ```python
+            # Define a simple trajectory
+            trajectory = [
+                # Timestep 1
+                {
+                    "shoulder": {"position": 0.0},
+                    "elbow": {"position": 0.0}
+                },
+                # Timestep 2
+                {
+                    "shoulder": {"position": 0.5, "velocity": 0.3},
+                    "elbow": {"position": 0.2, "velocity": 0.1}
+                },
+                # Timestep 3
+                {
+                    "shoulder": {"position": 1.0},
+                    "elbow": {"position": 0.4}
+                }
+            ]
+            
+            # Follow the trajectory
+            await robot.follow_trajectory(kos, trajectory, timestep=0.2)
+            ```
+        """
+        for i, waypoint in enumerate(trajectory):
+            # Extract positions and velocities from the waypoint
+            positions = {}
+            velocities = {}
+            
+            for joint_name, joint_data in waypoint.items():
+                if "position" in joint_data:
+                    positions[joint_name] = joint_data["position"]
+                if "velocity" in joint_data:
+                    velocities[joint_name] = joint_data["velocity"]
+            
+            # Move to this waypoint
+            await self.move(
+                kos,
+                positions=positions,
+                velocities=velocities if velocities else None,
+                wait=False
+            )
+            
+            # Wait before moving to the next waypoint (but not after the last one)
+            if i < len(trajectory) - 1:
+                await asyncio.sleep(timestep)
