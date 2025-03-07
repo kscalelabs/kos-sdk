@@ -142,6 +142,11 @@ class Robot:
 
         # Create an "all" group containing all joints
         self.groups["all"] = JointGroup("all", list(self.joints.values()))
+        
+        # Initialize monitoring attributes with proper type hints
+        self._monitoring: bool = False
+        self._monitoring_interval: float = 0.1
+        self._monitoring_quiet: bool = False
 
     async def configure(self, kos: KOS, is_real: bool = False) -> None:
         """Configure all joints with default parameters.
