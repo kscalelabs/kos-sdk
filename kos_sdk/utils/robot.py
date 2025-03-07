@@ -407,3 +407,25 @@ class Robot:
 
     def __repr__(self) -> str:
         return f"Robot(joints={len(self.joints)}, groups={len(self.groups)})"
+        
+    async def __aenter__(self) -> "Robot":
+        """Enter async context manager.
+        
+        Examples:
+            ```python
+            async with Robot() as robot:
+                # Robot is now ready to use
+                await robot.configure(kos)
+                # Do something with the robot
+            # Robot context is automatically exited
+            ```
+        """
+        return self
+        
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+        """Exit async context manager and clean up resources.
+        
+        This will stop any ongoing monitoring and make sure resources are properly cleaned up.
+        """
+        if getattr(self, "_monitoring", False):
+            await self.stop_monitoring()
