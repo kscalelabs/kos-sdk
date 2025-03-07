@@ -189,6 +189,7 @@ class Robot:
         kos: KOS,
         positions: Dict[str, float],
         wait: bool = True,
+        velocities: Optional[Dict[str, float]] = None,
     ) -> None:
         """Move specified joints to target positions.
 
@@ -196,6 +197,7 @@ class Robot:
             kos: KOS client instance
             positions: Mapping of joint names to target positions
             wait: Whether to wait for movement to complete
+            velocities: Optional mapping of joint names to target velocities
 
         Examples:
             ```python
@@ -205,11 +207,11 @@ class Robot:
                 "elbow": 0.5
             })
 
-            # Move joints with custom
-            await robot.move(kos, {
-                "shoulder": 0.0,
-                "elbow": 0.0
-            }, )
+            # Move joints with specific velocities
+            await robot.move(kos, 
+                positions={"shoulder": 0.0, "elbow": 0.0},
+                velocities={"shoulder": 0.5, "elbow": 0.3}
+            )
 
             # Move without waiting for completion
             await robot.move(kos, {"wrist": 0.7}, wait=False)
@@ -220,18 +222,43 @@ class Robot:
             states = await robot.get_states(kos)
             ```
         """
+        velocities = velocities or {}
+        min_pos, max_pos = self.config.position_limits
+        min_vel, max_vel = self.config.velocity_limits
+        
         commands = []
         for joint_name, position in positions.items():
-            if joint_name in self.joints:
-                commands.append(
-                    {
-                        "actuator_id": self.joints[joint_name].actuator_id,
-                        "position": position,
-                    }
-                )
+            if joint_name not in self.joints:
+                print(f"Warning: Joint '{joint_name}' not found, skipping")
+                continue
+                
+            # Apply position limits if specified
+            if min_pos != float('-inf') or max_pos != float('inf'):
+                position = max(min_pos, min(max_pos, position))
+                
+            command = {
+                "actuator_id": self.joints[joint_name].actuator_id,
+                "position": position,
+            }
+            
+            # Add velocity if specified for this joint
+            if joint_name in velocities:
+                velocity = velocities[joint_name]
+                # Apply velocity limits if specified
+                if min_vel != float('-inf') or max_vel != float('inf'):
+                    velocity = max(min_vel, min(max_vel, velocity))
+                command["velocity"] = velocity
+                
+            commands.append(command)
 
         if commands:
             await kos.actuator.command_actuators(commands)
+            
+            # If wait is True, we could implement waiting for the movement to complete
+            if wait:
+                # For now we'll just return, but a future implementation could wait
+                # until joints reach their target positions
+                pass
 
     async def zero_all(self, kos: KOS, velocity: Optional[float] = None) -> None:
         """Move all joints to zero position.
