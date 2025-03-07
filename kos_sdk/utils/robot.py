@@ -282,7 +282,12 @@ class Robot:
             ```
         """
         positions = {name: 0.0 for name in self.joints}
-        await self.move(kos, positions)
+        
+        if velocity is not None:
+            velocities = {name: velocity for name in self.joints}
+            await self.move(kos, positions, velocities=velocities)
+        else:
+            await self.move(kos, positions)
 
     async def get_states(
         self, kos: KOS, joint_names: Optional[List[str]] = None
