@@ -386,6 +386,75 @@ class Robot:
             ```
         """
         return self.groups.get(name)
+        
+    async def move_group(
+        self, 
+        kos: KOS, 
+        group_name: str, 
+        positions: Dict[str, float],
+        wait: bool = True,
+        velocities: Optional[Dict[str, float]] = None,
+    ) -> bool:
+        """Move joints in a specific group to target positions.
+        
+        Args:
+            kos: KOS client instance
+            group_name: Name of the joint group to move
+            positions: Mapping of joint names to target positions
+            wait: Whether to wait for movement to complete
+            velocities: Optional mapping of joint names to target velocities
+            
+        Returns:
+            True if group was found and command sent, False otherwise
+            
+        Examples:
+            ```python
+            # Move all joints in the "arm" group
+            success = await robot.move_group(kos, "arm", {
+                "shoulder": 1.0,
+                "elbow": 0.5,
+                "wrist": -0.3
+            })
+            
+            # Move with velocity control
+            success = await robot.move_group(kos, "leg", 
+                positions={"hip": 0.1, "knee": 0.2},
+                velocities={"hip": 0.5, "knee": 0.3}
+            )
+            ```
+        """
+        group = self.get_group(group_name)
+        if not group:
+            print(f"Warning: Group '{group_name}' not found")
+            return False
+            
+        # Filter positions to only include joints in this group
+        group_joint_names = [joint.name for joint in group]
+        filtered_positions = {
+            name: pos for name, pos in positions.items() 
+            if name in group_joint_names
+        }
+        
+        # Filter velocities if provided
+        filtered_velocities = None
+        if velocities:
+            filtered_velocities = {
+                name: vel for name, vel in velocities.items()
+                if name in group_joint_names
+            }
+            
+        if not filtered_positions:
+            print(f"Warning: No valid joints specified for group '{group_name}'")
+            return False
+            
+        # Move the filtered joints
+        await self.move(
+            kos, 
+            filtered_positions, 
+            wait=wait, 
+            velocities=filtered_velocities
+        )
+        return True
 
     def get_joint_names(self) -> List[str]:
         """Get a list of all joint names in the robot.
