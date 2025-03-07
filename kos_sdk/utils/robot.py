@@ -40,17 +40,22 @@ class RobotConfig:
             sim_gains=(80, 40),  # Lower kp, kd for simulator
             real_gains=(24, 20),  # Lower gains for real robot
             max_torque=50.0,      # Limit maximum torque
+            position_limits=(-3.14, 3.14),  # Limit joint range to ±180 degrees
+            velocity_limits=(-2.0, 2.0),    # Limit joint velocity
         )
 
         # Access configuration values
         kp, kd = custom_config.sim_gains
         max_torque = custom_config.max_torque
+        min_pos, max_pos = custom_config.position_limits
         ```
     """
 
     sim_gains: tuple[float, float] = (32, 32)  # kp, kd for simulator
     real_gains: tuple[float, float] = (32, 32)  # kp, kd for real robot
     max_torque: float = 100.0
+    position_limits: tuple[float, float] = (-float('inf'), float('inf'))  # min, max in radians
+    velocity_limits: tuple[float, float] = (-float('inf'), float('inf'))  # min, max in rad/s
 
 
 class Robot:
