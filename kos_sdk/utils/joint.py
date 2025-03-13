@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional
 
+
 @dataclass
 class JointState:
     """Represents the current state of a joint.
@@ -16,9 +17,11 @@ class JointState:
         current_torque = state.torque
         ```
     """
+
     position: float
     velocity: float
     torque: float
+
 
 class Joint:
     """Represents a single robot joint with a human-readable name.
@@ -61,6 +64,7 @@ class Joint:
 
     def __repr__(self) -> str:
         return f"Joint(name='{self.name}', id={self.actuator_id})"
+
 
 class JointGroup:
     """A collection of joints that can be controlled together.
