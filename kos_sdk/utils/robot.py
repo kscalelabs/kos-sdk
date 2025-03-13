@@ -1,8 +1,9 @@
-from typing import Optional, Dict, List, Union, Sequence
-from dataclasses import dataclass
 import asyncio
-import time
+from dataclasses import dataclass
+from typing import Dict, List, Optional, Sequence
+
 from pykos import KOS
+
 from .joint import Joint, JointGroup, JointState
 
 # Default mapping from actuator IDs to joint names
@@ -56,8 +57,8 @@ class RobotConfig:
     sim_gains: tuple[float, float] = (32, 32)  # kp, kd for simulator
     real_gains: tuple[float, float] = (32, 32)  # kp, kd for real robot
     max_torque: float = 100.0
-    position_limits: tuple[float, float] = (-float('inf'), float('inf'))  # min, max in radians
-    velocity_limits: tuple[float, float] = (-float('inf'), float('inf'))  # min, max in rad/s
+    position_limits: tuple[float, float] = (-float("inf"), float("inf"))  # min, max in radians
+    velocity_limits: tuple[float, float] = (-float("inf"), float("inf"))  # min, max in rad/s
 
 
 class Robot:
@@ -130,26 +131,20 @@ class Robot:
         # Use default joint mapping if none provided
         if joint_map is None:
             # Invert the ACTUATOR_ID_TO_NAME mapping to create joint_map
-            joint_map = {
-                name: actuator_id for actuator_id, name in ACTUATOR_ID_TO_NAME.items()
-            }
+            joint_map = {name: actuator_id for actuator_id, name in ACTUATOR_ID_TO_NAME.items()}
 
-        self.joints = {
-            name: Joint(name, actuator_id) for name, actuator_id in joint_map.items()
-        }
+        self.joints = {name: Joint(name, actuator_id) for name, actuator_id in joint_map.items()}
 
         # Create default groups
         self.groups = {}
         if groups:
             for group_name, joint_names in groups.items():
-                group_joints = [
-                    self.joints[name] for name in joint_names if name in self.joints
-                ]
+                group_joints = [self.joints[name] for name in joint_names if name in self.joints]
                 self.groups[group_name] = JointGroup(group_name, group_joints)
 
         # Create an "all" group containing all joints
         self.groups["all"] = JointGroup("all", list(self.joints.values()))
-        
+
         # Initialize monitoring attributes with proper type hints
         self._monitoring: bool = False
         self._monitoring_interval: float = 0.1
@@ -210,7 +205,7 @@ class Robot:
             })
 
             # Move joints with specific velocities
-            await robot.move(kos, 
+            await robot.move(kos,
                 positions={"shoulder": 0.0, "elbow": 0.0},
                 velocities={"shoulder": 0.5, "elbow": 0.3}
             )
@@ -227,35 +222,35 @@ class Robot:
         velocities = velocities or {}
         min_pos, max_pos = self.config.position_limits
         min_vel, max_vel = self.config.velocity_limits
-        
+
         commands = []
         for joint_name, position in positions.items():
             if joint_name not in self.joints:
                 print(f"Warning: Joint '{joint_name}' not found, skipping")
                 continue
-                
+
             # Apply position limits if specified
-            if min_pos != float('-inf') or max_pos != float('inf'):
+            if min_pos != float("-inf") or max_pos != float("inf"):
                 position = max(min_pos, min(max_pos, position))
-                
+
             command = {
                 "actuator_id": self.joints[joint_name].actuator_id,
                 "position": position,
             }
-            
+
             # Add velocity if specified for this joint
             if joint_name in velocities:
                 velocity = velocities[joint_name]
                 # Apply velocity limits if specified
-                if min_vel != float('-inf') or max_vel != float('inf'):
+                if min_vel != float("-inf") or max_vel != float("inf"):
                     velocity = max(min_vel, min(max_vel, velocity))
                 command["velocity"] = velocity
-                
+
             commands.append(command)
 
         if commands:
             await kos.actuator.command_actuators(commands)
-            
+
             # If wait is True, we could implement waiting for the movement to complete
             if wait:
                 # For now we'll just return, but a future implementation could wait
@@ -284,7 +279,7 @@ class Robot:
             ```
         """
         positions = {name: 0.0 for name in self.joints}
-        
+
         if velocity is not None:
             velocities = {name: velocity for name in self.joints}
             await self.move(kos, positions, velocities=velocities)
@@ -315,9 +310,7 @@ class Robot:
             shoulder_pos = arm_states["shoulder"].position
             ```
         """
-        query_joints = [
-            self.joints[name] for name in (joint_names or self.joints.keys())
-        ]
+        query_joints = [self.joints[name] for name in (joint_names or self.joints.keys())]
         actuator_ids = [joint.actuator_id for joint in query_joints]
 
         try:
@@ -343,9 +336,7 @@ class Robot:
                     if joint._state:
                         states[joint.name] = joint._state
                     else:
-                        states[joint.name] = JointState(
-                            position=0.0, velocity=0.0, torque=0.0
-                        )
+                        states[joint.name] = JointState(position=0.0, velocity=0.0, torque=0.0)
                         joint._state = states[joint.name]  # Cache the zeroed state
 
             return states
@@ -358,9 +349,7 @@ class Robot:
                 if joint._state:
                     states[joint.name] = joint._state
                 else:
-                    states[joint.name] = JointState(
-                        position=0.0, velocity=0.0, torque=0.0
-                    )
+                    states[joint.name] = JointState(position=0.0, velocity=0.0, torque=0.0)
                     joint._state = states[joint.name]
             return states
 
@@ -388,27 +377,27 @@ class Robot:
             ```
         """
         return self.groups.get(name)
-        
+
     async def move_group(
-        self, 
-        kos: KOS, 
-        group_name: str, 
+        self,
+        kos: KOS,
+        group_name: str,
         positions: Dict[str, float],
         wait: bool = True,
         velocities: Optional[Dict[str, float]] = None,
     ) -> bool:
         """Move joints in a specific group to target positions.
-        
+
         Args:
             kos: KOS client instance
             group_name: Name of the joint group to move
             positions: Mapping of joint names to target positions
             wait: Whether to wait for movement to complete
             velocities: Optional mapping of joint names to target velocities
-            
+
         Returns:
             True if group was found and command sent, False otherwise
-            
+
         Examples:
             ```python
             # Move all joints in the "arm" group
@@ -417,9 +406,9 @@ class Robot:
                 "elbow": 0.5,
                 "wrist": -0.3
             })
-            
+
             # Move with velocity control
-            success = await robot.move_group(kos, "leg", 
+            success = await robot.move_group(kos, "leg",
                 positions={"hip": 0.1, "knee": 0.2},
                 velocities={"hip": 0.5, "knee": 0.3}
             )
@@ -429,33 +418,26 @@ class Robot:
         if not group:
             print(f"Warning: Group '{group_name}' not found")
             return False
-            
+
         # Filter positions to only include joints in this group
         group_joint_names = [joint.name for joint in group]
         filtered_positions = {
-            name: pos for name, pos in positions.items() 
-            if name in group_joint_names
+            name: pos for name, pos in positions.items() if name in group_joint_names
         }
-        
+
         # Filter velocities if provided
         filtered_velocities = None
         if velocities:
             filtered_velocities = {
-                name: vel for name, vel in velocities.items()
-                if name in group_joint_names
+                name: vel for name, vel in velocities.items() if name in group_joint_names
             }
-            
+
         if not filtered_positions:
             print(f"Warning: No valid joints specified for group '{group_name}'")
             return False
-            
+
         # Move the filtered joints
-        await self.move(
-            kos, 
-            filtered_positions, 
-            wait=wait, 
-            velocities=filtered_velocities
-        )
+        await self.move(kos, filtered_positions, wait=wait, velocities=filtered_velocities)
         return True
 
     def get_joint_names(self) -> List[str]:
@@ -515,10 +497,10 @@ class Robot:
 
     def __repr__(self) -> str:
         return f"Robot(joints={len(self.joints)}, groups={len(self.groups)})"
-        
+
     async def __aenter__(self) -> "Robot":
         """Enter async context manager.
-        
+
         Examples:
             ```python
             async with Robot() as robot:
@@ -529,15 +511,15 @@ class Robot:
             ```
         """
         return self
-        
+
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
         """Exit async context manager and clean up resources.
-        
+
         This will stop any ongoing monitoring and make sure resources are properly cleaned up.
         """
         if getattr(self, "_monitoring", False):
             await self.stop_monitoring()
-            
+
     async def follow_trajectory(
         self,
         kos: KOS,
@@ -545,14 +527,14 @@ class Robot:
         timestep: float = 0.1,
     ) -> None:
         """Follow a trajectory specified as a sequence of joint positions.
-        
+
         Args:
             kos: KOS client instance
             trajectory: Sequence of position dictionaries for each timestep
                         Each element is a dict mapping joint names to a dict of values
                         (e.g., {"position": 1.0, "velocity": 0.5})
             timestep: Time in seconds between trajectory points
-            
+
         Examples:
             ```python
             # Define a simple trajectory
@@ -573,7 +555,7 @@ class Robot:
                     "elbow": {"position": 0.4}
                 }
             ]
-            
+
             # Follow the trajectory
             await robot.follow_trajectory(kos, trajectory, timestep=0.2)
             ```
@@ -582,21 +564,18 @@ class Robot:
             # Extract positions and velocities from the waypoint
             positions = {}
             velocities = {}
-            
+
             for joint_name, joint_data in waypoint.items():
                 if "position" in joint_data:
                     positions[joint_name] = joint_data["position"]
                 if "velocity" in joint_data:
                     velocities[joint_name] = joint_data["velocity"]
-            
+
             # Move to this waypoint
             await self.move(
-                kos,
-                positions=positions,
-                velocities=velocities if velocities else None,
-                wait=False
+                kos, positions=positions, velocities=velocities if velocities else None, wait=False
             )
-            
+
             # Wait before moving to the next waypoint (but not after the last one)
             if i < len(trajectory) - 1:
                 await asyncio.sleep(timestep)
