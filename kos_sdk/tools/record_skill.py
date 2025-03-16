@@ -58,9 +58,7 @@ class GUIProcess(Process):
         scrollbar = ttk.Scrollbar(keyboard_frame, orient="vertical", command=canvas.yview)
         scrollable_frame = ttk.Frame(canvas)
 
-        scrollable_frame.bind(
-            "<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
-        )
+        scrollable_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
 
         canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)
@@ -119,24 +117,20 @@ class GUIProcess(Process):
         delays_frame = ttk.Frame(record_frame)
         delays_frame.pack(pady=5)
         for delay in [0.5, 1.0, 2.0]:
-            ttk.Button(
-                delays_frame, text=f"{delay}s", command=lambda d=delay: delay_var.set(str(d))
-            ).pack(side=tk.LEFT, padx=5)
+            ttk.Button(delays_frame, text=f"{delay}s", command=lambda d=delay: delay_var.set(str(d))).pack(
+                side=tk.LEFT, padx=5
+            )
 
         # Record button
         record_btn = ttk.Button(
             record_frame,
             text="Record Keyframe",
-            command=lambda: self.command_queue.put(
-                ("record", robot.get_joint_angles(), float(delay_var.get()))
-            ),
+            command=lambda: self.command_queue.put(("record", robot.get_joint_angles(), float(delay_var.get()))),
         )
         record_btn.pack(pady=10)
 
         # Save button
-        save_btn = ttk.Button(
-            record_frame, text="Save and Exit", command=lambda: self.command_queue.put(("quit",))
-        )
+        save_btn = ttk.Button(record_frame, text="Save and Exit", command=lambda: self.command_queue.put(("quit",)))
         save_btn.pack(pady=10)
 
         # Set up window close handler

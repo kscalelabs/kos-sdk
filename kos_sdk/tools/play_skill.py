@@ -52,8 +52,7 @@ class PlaySkill:
             with open(filepath, "r") as f:
                 data = json.load(f)
                 frames = [
-                    Frame(joint_positions=frame["joint_positions"], delay=frame["delay"])
-                    for frame in data["frames"]
+                    Frame(joint_positions=frame["joint_positions"], delay=frame["delay"]) for frame in data["frames"]
                 ]
                 self.skill_data = SkillData(name=data["name"], frames=frames)
             logger.info(f"Loaded skill {skill_name} with {len(self.skill_data.frames)} frames")
@@ -80,9 +79,7 @@ class PlaySkill:
             self.current_frame_index += 1
             self.interpolation_time = 0.0
             if self.current_frame_index < len(self.skill_data.frames):
-                self.current_positions = self.skill_data.frames[
-                    self.current_frame_index
-                ].joint_positions.copy()
+                self.current_positions = self.skill_data.frames[self.current_frame_index].joint_positions.copy()
             return
 
         # Interpolate between current and next frame

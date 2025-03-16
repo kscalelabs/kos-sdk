@@ -46,10 +46,7 @@ from typing import Dict, List, Any, Optional
 import pykos
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 # Default configuration
@@ -59,28 +56,22 @@ DEFAULT_TIMEOUT = 5.0  # seconds
 
 async def test_connection(robot_ip: str = DEFAULT_ROBOT_IP) -> Dict[str, Any]:
     """Test basic connectivity to the robot.
-    
+
     This function checks if the robot is reachable and if the KOS API is responding.
     """
-    result = {
-        "success": False,
-        "ip_reachable": False,
-        "api_responding": False,
-        "message": "",
-        "details": {}
-    }
-    
+    result = {"success": False, "ip_reachable": False, "api_responding": False, "message": "", "details": {}}
+
     # First, check if the IP is reachable with a simple socket connection
     try:
         logger.info(f"Testing TCP connectivity to {robot_ip}...")
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(DEFAULT_TIMEOUT)
-        
+
         # Try to connect to port 22 (SSH) which should be open on the robot
         start_time = time.time()
         sock.connect((robot_ip, 22))
         connection_time = time.time() - start_time
-        
+
         sock.close()
         result["ip_reachable"] = True
         result["details"]["tcp_connection_time_ms"] = round(connection_time * 1000, 2)
@@ -89,17 +80,17 @@ async def test_connection(robot_ip: str = DEFAULT_ROBOT_IP) -> Dict[str, Any]:
         result["message"] = f"Failed to connect to robot at {robot_ip}: {str(e)}"
         logger.error(f"{result['message']}")
         return result
-    
+
     # Now check if the KOS API is responding
     try:
         logger.info(f"Testing KOS API connectivity...")
         start_time = time.time()
         kos = pykos.KOS(ip=robot_ip)
-        
+
         # Try to get a simple response from the API
         await kos.actuator.get_actuators_state([11])
         api_time = time.time() - start_time
-        
+
         result["api_responding"] = True
         result["details"]["api_response_time_ms"] = round(api_time * 1000, 2)
         result["success"] = True
@@ -108,17 +99,17 @@ async def test_connection(robot_ip: str = DEFAULT_ROBOT_IP) -> Dict[str, Any]:
     except Exception as e:
         result["message"] = f"Robot is reachable but KOS API is not responding: {str(e)}"
         logger.error(f"{result['message']}")
-    
+
     return result
 
 
 async def measure_latency(robot_ip: str = DEFAULT_ROBOT_IP, num_pings: int = 10) -> Dict[str, Any]:
     """Measure the round-trip latency between the client and the robot.
-    
+
     Args:
         robot_ip: IP address of the robot
         num_pings: Number of ping measurements to take
-        
+
     Returns:
         Dictionary with latency statistics
     """
@@ -129,13 +120,13 @@ async def measure_latency(robot_ip: str = DEFAULT_ROBOT_IP, num_pings: int = 10)
         "avg_latency_ms": 0,
         "min_latency_ms": 0,
         "max_latency_ms": 0,
-        "jitter_ms": 0
+        "jitter_ms": 0,
     }
-    
+
     try:
         logger.info(f"Measuring latency to {robot_ip} ({num_pings} pings)...")
         kos = pykos.KOS(ip=robot_ip)
-        
+
         latencies = []
         for i in range(num_pings):
             start_time = time.time()
@@ -145,21 +136,21 @@ async def measure_latency(robot_ip: str = DEFAULT_ROBOT_IP, num_pings: int = 10)
             latencies.append(latency * 1000)  # Convert to milliseconds
             logger.info(f"Ping {i+1}/{num_pings}: {latency * 1000:.2f} ms")
             await asyncio.sleep(0.1)  # Small delay between pings
-        
+
         # Calculate statistics
         result["latencies_ms"] = [round(lat, 2) for lat in latencies]
         result["avg_latency_ms"] = round(sum(latencies) / len(latencies), 2)
         result["min_latency_ms"] = round(min(latencies), 2)
         result["max_latency_ms"] = round(max(latencies), 2)
         result["jitter_ms"] = round(max(latencies) - min(latencies), 2)
-        
+
         result["success"] = True
         result["message"] = f"Latency measurement completed. Average: {result['avg_latency_ms']} ms"
         logger.info(f"{result['message']}")
     except Exception as e:
         result["message"] = f"Failed to measure latency: {str(e)}"
         logger.error(f"{result['message']}")
-    
+
     return result
 
 
@@ -175,7 +166,8 @@ def measure_latency_sync(robot_ip: str = DEFAULT_ROBOT_IP, num_pings: int = 10) 
 
 def help():
     """Print help information about the connection testing module."""
-    print("""
+    print(
+        """
 Connection Testing Module for KOS Robots
 =======================================
 
@@ -206,15 +198,12 @@ if result["success"]:
 # Measure connection latency
 latency = connection.measure_latency_sync()
 print(f"Average latency: {latency['avg_latency_ms']} ms")
-""")
+"""
+    )
 
 
 # Define what gets imported with "from kos_sdk.tests.connection import *"
-__all__ = [
-    'test_connection_sync',
-    'measure_latency_sync',
-    'help'
-]
+__all__ = ["test_connection_sync", "measure_latency_sync", "help"]
 
 
 if __name__ == "__main__":
@@ -228,7 +217,7 @@ if __name__ == "__main__":
             if "details" in result:
                 print(f"TCP connection time: {result['details'].get('tcp_connection_time_ms', 'N/A')} ms")
                 print(f"API response time: {result['details'].get('api_response_time_ms', 'N/A')} ms")
-            
+
             # If connection is successful, measure latency
             print("\nMeasuring connection latency...")
             latency_result = asyncio.run(measure_latency())

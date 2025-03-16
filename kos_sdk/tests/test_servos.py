@@ -29,10 +29,7 @@ import logging
 from typing import List, Dict, Any, Optional, Set
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 # Default configuration
@@ -92,7 +89,7 @@ async def connect_to_robot(robot_ip: str) -> Optional[pykos.KOS]:
     try:
         logger.info(f"Connecting to robot at {robot_ip}...")
         kos = pykos.KOS(ip=robot_ip)
-        
+
         # Test connection with a simple query
         await kos.actuator.get_actuators_state([DEFAULT_TEST_ACTUATORS[0]])
         logger.info("✅ Successfully connected to robot")
@@ -103,57 +100,47 @@ async def connect_to_robot(robot_ip: str) -> Optional[pykos.KOS]:
 
 
 async def test_actuator_movement(
-    kos, 
-    actuator_id: int, 
-    movement_degrees: float = DEFAULT_MOVEMENT_DEGREES, 
-    wait_time: float = DEFAULT_WAIT_TIME
+    kos, actuator_id: int, movement_degrees: float = DEFAULT_MOVEMENT_DEGREES, wait_time: float = DEFAULT_WAIT_TIME
 ) -> Dict[str, Any]:
     """Test if an actuator can move and return to its original position."""
     if not validate_actuator_id(actuator_id):
         logger.error(f"Invalid actuator ID: {actuator_id}")
-        return {
-            "success": False, 
-            "message": f"Invalid actuator ID: {actuator_id}"
-        }
-    
+        return {"success": False, "message": f"Invalid actuator ID: {actuator_id}"}
+
     try:
         # Get current position
         state = await kos.actuator.get_actuators_state([actuator_id])
         if not state.states:
             logger.error(f"Could not get state for actuator {actuator_id}")
             return {"success": False, "message": f"Could not get state for actuator {actuator_id}"}
-            
+
         current_position = state.states[0].position
         name = ID_TO_NAME.get(actuator_id, f"Actuator {actuator_id}")
         logger.info(f"{name} (ID: {actuator_id}) current position: {current_position:.2f} degrees")
-        
+
         # Configure the actuator
         logger.info(f"Configuring {name}...")
         await kos.actuator.configure_actuator(
-            actuator_id=actuator_id,
-            kp=DEFAULT_KP,
-            kd=DEFAULT_KD,
-            max_torque=DEFAULT_MAX_TORQUE,
-            torque_enabled=True
+            actuator_id=actuator_id, kp=DEFAULT_KP, kd=DEFAULT_KD, max_torque=DEFAULT_MAX_TORQUE, torque_enabled=True
         )
-        
+
         # Move forward
         target_position = current_position + movement_degrees
         logger.info(f"Moving {name} to {target_position:.2f} degrees...")
         await kos.actuator.command_actuators([{"actuator_id": actuator_id, "position": target_position}])
         await asyncio.sleep(wait_time)
-        
+
         # Check if it moved
         state = await kos.actuator.get_actuators_state([actuator_id])
         new_position = state.states[0].position
         moved_forward = abs(new_position - current_position) > 1.0
-        
+
         logger.info(f"{name} new position: {new_position:.2f} degrees")
         if moved_forward:
             logger.info(f"✅ {name} successfully moved forward")
         else:
             logger.warning(f"❌ {name} did not move forward as expected")
-        
+
         # Store results
         test_results = {
             "success": moved_forward,
@@ -164,24 +151,24 @@ async def test_actuator_movement(
                 "target": target_position,
                 "achieved": new_position,
                 "delta": abs(new_position - current_position),
-                "moved": moved_forward
-            }
+                "moved": moved_forward,
+            },
         }
-        
+
         # Move back to original position
         logger.info(f"Moving {name} back to {current_position:.2f} degrees...")
         await kos.actuator.command_actuators([{"actuator_id": actuator_id, "position": current_position}])
         await asyncio.sleep(wait_time)
-        
+
         # Disable torque
         try:
             await kos.actuator.configure_actuator(actuator_id=actuator_id, torque_enabled=False)
             logger.info(f"Disabled torque on {name}")
         except Exception as e:
             logger.warning(f"Error disabling torque: {e}")
-        
+
         return test_results
-        
+
     except Exception as e:
         logger.error(f"Error testing actuator {actuator_id}: {e}")
         try:
@@ -195,15 +182,15 @@ async def get_actuator_state(kos, actuator_id: int) -> Dict[str, Any]:
     """Get detailed state of an actuator."""
     if not validate_actuator_id(actuator_id):
         return {"error": f"Invalid actuator ID: {actuator_id}"}
-    
+
     try:
         state = await kos.actuator.get_actuators_state([actuator_id])
         if not state.states:
             return {"error": f"Could not get state for actuator {actuator_id}"}
-        
+
         actuator_state = state.states[0]
         name = ID_TO_NAME.get(actuator_id, f"Actuator {actuator_id}")
-        
+
         return {
             "id": actuator_id,
             "name": name,
@@ -212,59 +199,60 @@ async def get_actuator_state(kos, actuator_id: int) -> Dict[str, Any]:
             "torque": actuator_state.torque,
             "temperature": actuator_state.temperature,
             "torque_enabled": actuator_state.torque_enabled,
-            "error_code": actuator_state.error_code
+            "error_code": actuator_state.error_code,
         }
     except Exception as e:
         return {"error": f"Error getting state for actuator {actuator_id}: {str(e)}"}
 
 
 async def test_servos(
-    robot_ip: str = DEFAULT_ROBOT_IP, 
-    actuator_ids: List[int] = DEFAULT_TEST_ACTUATORS
+    robot_ip: str = DEFAULT_ROBOT_IP, actuator_ids: List[int] = DEFAULT_TEST_ACTUATORS
 ) -> Dict[int, Dict[str, Any]]:
     """Test multiple servos."""
     # Input validation with user-friendly messages
     if not actuator_ids:
         print("❌ Error: No actuator IDs provided. Please specify at least one actuator ID.")
         return {"error": "No actuator IDs provided"}
-    
+
     invalid_ids = validate_actuator_ids(actuator_ids)
     if invalid_ids:
         print(f"❌ Error: Invalid actuator IDs: {invalid_ids}")
         print(f"Valid actuator IDs are: {VALID_ACTUATOR_IDS}")
         return {"error": f"Invalid actuator IDs: {invalid_ids}"}
-    
+
     kos = await connect_to_robot(robot_ip)
     if not kos:
-        print(f"❌ Error: Failed to connect to robot at {robot_ip}. Please check the IP address and network connection.")
+        print(
+            f"❌ Error: Failed to connect to robot at {robot_ip}. Please check the IP address and network connection."
+        )
         return {"error": "Failed to connect to robot"}
-    
+
     results = {}
     for actuator_id in actuator_ids:
         logger.info(f"\n--- Testing actuator {actuator_id} ---")
         result = await test_actuator_movement(kos, actuator_id)
         results[actuator_id] = result
         await asyncio.sleep(0.5)
-    
+
     # Print summary
     print("\n=== Test Results Summary ===")
     all_success = True
-    
+
     for actuator_id, result in results.items():
         success = result.get("success", False)
         name = result.get("name", f"Actuator {actuator_id}")
         status = "✅ PASS" if success else "❌ FAIL"
-        
+
         if not success:
             all_success = False
-        
+
         print(f"{name} (ID: {actuator_id}): {status}")
-    
+
     if all_success:
         print("\n✅ All actuators passed the movement test!")
     else:
         print("\n⚠️ Some actuators failed the movement test.")
-    
+
     return results
 
 
@@ -272,31 +260,28 @@ async def test_servo(robot_ip: str = DEFAULT_ROBOT_IP, actuator_id: int = 11) ->
     """Test a single servo."""
     if not validate_actuator_id(actuator_id):
         return {"success": False, "message": f"Invalid actuator ID: {actuator_id}"}
-    
+
     kos = await connect_to_robot(robot_ip)
     if not kos:
         return {"success": False, "message": "Failed to connect to robot"}
-    
+
     return await test_actuator_movement(kos, actuator_id)
 
 
 async def move_servo(
-    robot_ip: str = DEFAULT_ROBOT_IP, 
-    actuator_id: int = 11, 
-    position: float = None, 
-    relative_movement: float = None
+    robot_ip: str = DEFAULT_ROBOT_IP, actuator_id: int = 11, position: float = None, relative_movement: float = None
 ) -> Dict[str, Any]:
     """Move a servo to a position or by a relative amount."""
     if position is None and relative_movement is None:
         return {"error": "Either position or relative_movement must be specified"}
-    
+
     if not validate_actuator_id(actuator_id):
         return {"success": False, "message": f"Invalid actuator ID: {actuator_id}"}
-    
+
     kos = await connect_to_robot(robot_ip)
     if not kos:
         return {"success": False, "message": "Failed to connect to robot"}
-    
+
     try:
         # If relative movement is specified, get current position
         target_position = position
@@ -304,38 +289,34 @@ async def move_servo(
             state = await kos.actuator.get_actuators_state([actuator_id])
             if not state.states:
                 return {"success": False, "message": f"Could not get state for actuator {actuator_id}"}
-            
+
             current_position = state.states[0].position
             target_position = current_position + relative_movement
-        
+
         # Configure actuator for safe movement
         name = ID_TO_NAME.get(actuator_id, f"Actuator {actuator_id}")
         logger.info(f"Configuring {name}...")
         await kos.actuator.configure_actuator(
-            actuator_id=actuator_id,
-            kp=DEFAULT_KP,
-            kd=DEFAULT_KD,
-            max_torque=DEFAULT_MAX_TORQUE,
-            torque_enabled=True
+            actuator_id=actuator_id, kp=DEFAULT_KP, kd=DEFAULT_KD, max_torque=DEFAULT_MAX_TORQUE, torque_enabled=True
         )
-        
+
         # Get state before moving
         before_state = await kos.actuator.get_actuators_state([actuator_id])
         before_position = before_state.states[0].position
-        
+
         # Move actuator
         logger.info(f"Moving {name} to {target_position:.2f} degrees...")
         await kos.actuator.command_actuators([{"actuator_id": actuator_id, "position": target_position}])
         await asyncio.sleep(DEFAULT_WAIT_TIME)
-        
+
         # Get state after movement
         after_state = await kos.actuator.get_actuators_state([actuator_id])
         after_position = after_state.states[0].position
-        
+
         # Calculate movement metrics
         movement_delta = abs(after_position - before_position)
         moved = movement_delta > 1.0
-        
+
         result = {
             "success": moved,
             "name": name,
@@ -344,15 +325,15 @@ async def move_servo(
             "target_position": target_position,
             "final_position": after_position,
             "movement_delta": movement_delta,
-            "moved": moved
+            "moved": moved,
         }
-        
+
         # Disable torque
         await kos.actuator.configure_actuator(actuator_id=actuator_id, torque_enabled=False)
         logger.info(f"Disabled torque on {name}")
-        
+
         return result
-        
+
     except Exception as e:
         logger.error(f"Error moving actuator {actuator_id}: {e}")
         try:
@@ -366,28 +347,28 @@ async def get_servo_state(robot_ip: str = DEFAULT_ROBOT_IP, actuator_id: int = 1
     """Get the state of a single servo."""
     if not validate_actuator_id(actuator_id):
         return {"error": f"Invalid actuator ID: {actuator_id}"}
-    
+
     kos = await connect_to_robot(robot_ip)
     if not kos:
         return {"error": "Failed to connect to robot"}
-    
+
     state = await get_actuator_state(kos, actuator_id)
-    
+
     # Print state in a readable format
     if "error" not in state:
-        name = state['name']
+        name = state["name"]
         print(f"\n=== State of {name} (ID: {actuator_id}) ===")
         print(f"  Position: {state['position']:.2f} degrees")
         print(f"  Velocity: {state['velocity']:.2f} deg/s")
         print(f"  Torque: {state['torque']:.2f}")
         print(f"  Temperature: {state['temperature']:.1f}°C")
         print(f"  Torque enabled: {state['torque_enabled']}")
-        
-        if state['error_code']:
+
+        if state["error_code"]:
             print(f"  ❌ Error code: {state['error_code']}")
     else:
         print(f"❌ Error: {state['error']}")
-    
+
     return state
 
 
@@ -396,12 +377,12 @@ async def list_available_servos(robot_ip: str = DEFAULT_ROBOT_IP) -> Dict[str, A
     kos = await connect_to_robot(robot_ip)
     if not kos:
         return {"error": "Failed to connect to robot"}
-    
+
     results = {}
     print("\n=== Available Servos ===")
     print(f"{'ID':<5} {'Name':<20} {'Status':<10}")
     print("-" * 40)
-    
+
     for actuator_id in VALID_ACTUATOR_IDS:
         try:
             state = await kos.actuator.get_actuators_state([actuator_id])
@@ -414,7 +395,7 @@ async def list_available_servos(robot_ip: str = DEFAULT_ROBOT_IP) -> Dict[str, A
                     "status": "ok" if not state.states[0].error_code else "error",
                     "error_code": state.states[0].error_code,
                     "position": state.states[0].position,
-                    "temperature": state.states[0].temperature
+                    "temperature": state.states[0].temperature,
                 }
             else:
                 print(f"{actuator_id:<5} {ID_TO_NAME.get(actuator_id, 'Unknown'):<20} {'❓ Not responding':<10}")
@@ -422,7 +403,7 @@ async def list_available_servos(robot_ip: str = DEFAULT_ROBOT_IP) -> Dict[str, A
         except Exception:
             print(f"{actuator_id:<5} {ID_TO_NAME.get(actuator_id, 'Unknown'):<20} {'❌ Error':<10}")
             results[actuator_id] = {"status": "error"}
-    
+
     return results
 
 
@@ -433,21 +414,20 @@ def test_servo_sync(robot_ip: str = DEFAULT_ROBOT_IP, actuator_id: int = 11) -> 
 
 
 def test_servos_sync(
-    robot_ip: str = DEFAULT_ROBOT_IP, 
-    actuator_ids: List[int] = DEFAULT_TEST_ACTUATORS
+    robot_ip: str = DEFAULT_ROBOT_IP, actuator_ids: List[int] = DEFAULT_TEST_ACTUATORS
 ) -> Dict[int, Dict[str, Any]]:
     """Synchronous wrapper for test_servos."""
     # Input validation before running async code
     if not actuator_ids:
         print("❌ Error: No actuator IDs provided. Please specify at least one actuator ID.")
         return {"error": "No actuator IDs provided"}
-    
+
     invalid_ids = validate_actuator_ids(actuator_ids)
     if invalid_ids:
         print(f"❌ Error: Invalid actuator IDs: {invalid_ids}")
         print(f"Valid actuator IDs are: {VALID_ACTUATOR_IDS}")
         return {"error": f"Invalid actuator IDs: {invalid_ids}"}
-    
+
     return asyncio.run(test_servos(robot_ip, actuator_ids))
 
 
@@ -458,27 +438,24 @@ def get_servo_state_sync(robot_ip: str = DEFAULT_ROBOT_IP, actuator_id: int = 11
         print(f"❌ Error: Invalid actuator ID: {actuator_id}")
         print(f"Valid actuator IDs are: {VALID_ACTUATOR_IDS}")
         return {"error": f"Invalid actuator ID: {actuator_id}"}
-    
+
     return asyncio.run(get_servo_state(robot_ip, actuator_id))
 
 
 def move_servo_sync(
-    robot_ip: str = DEFAULT_ROBOT_IP, 
-    actuator_id: int = 11, 
-    position: float = None, 
-    relative_movement: float = None
+    robot_ip: str = DEFAULT_ROBOT_IP, actuator_id: int = 11, position: float = None, relative_movement: float = None
 ) -> Dict[str, Any]:
     """Synchronous wrapper for move_servo."""
     # Input validation before running async code
     if position is None and relative_movement is None:
         print("❌ Error: Either position or relative_movement must be specified")
         return {"error": "Either position or relative_movement must be specified"}
-    
+
     if not validate_actuator_id(actuator_id):
         print(f"❌ Error: Invalid actuator ID: {actuator_id}")
         print(f"Valid actuator IDs are: {VALID_ACTUATOR_IDS}")
         return {"success": False, "message": f"Invalid actuator ID: {actuator_id}"}
-    
+
     return asyncio.run(move_servo(robot_ip, actuator_id, position, relative_movement))
 
 
@@ -489,7 +466,8 @@ def list_available_servos_sync(robot_ip: str = DEFAULT_ROBOT_IP) -> Dict[str, An
 
 def help():
     """Print help information about the servo testing module."""
-    print("""
+    print(
+        """
 Servo Testing Module for KOS Robots
 ===================================
 
@@ -535,20 +513,21 @@ servos.test_servo_sync(actuator_id=11)
 
 # Move a servo
 servos.move_servo_sync(actuator_id=11, position=10.0)
-""")
+"""
+    )
 
 
 # Add this at the end of your file, just before the if __name__ == "__main__" block
 # Define what gets imported with "from kos_sdk.tests.servos import *"
 __all__ = [
-    'test_servo_sync',
-    'test_servos_sync',
-    'get_servo_state_sync',
-    'move_servo_sync',
-    'list_available_servos_sync',
-    'help',
-    'JOINT_MAP',
-    'VALID_ACTUATOR_IDS'
+    "test_servo_sync",
+    "test_servos_sync",
+    "get_servo_state_sync",
+    "move_servo_sync",
+    "list_available_servos_sync",
+    "help",
+    "JOINT_MAP",
+    "VALID_ACTUATOR_IDS",
 ]
 
 

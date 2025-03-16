@@ -56,10 +56,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import pykos
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 # Default configuration
@@ -69,6 +66,7 @@ DEFAULT_ROBOT_IP = "10.33.10.65"
 @dataclass
 class ImuTestResults:
     """Results from running the IMU test."""
+
     avg_rate: float
     total_samples: int
     duration: float
@@ -90,7 +88,7 @@ async def connect_to_robot(robot_ip: str) -> Optional[pykos.KOS]:
     try:
         logger.info(f"Connecting to robot at {robot_ip}...")
         kos = pykos.KOS(ip=robot_ip)
-        
+
         # Test connection with a simple query
         await kos.imu.get_imu_values()
         logger.info("✅ Successfully connected to robot")
@@ -105,10 +103,10 @@ async def test_imu(robot_ip: str = DEFAULT_ROBOT_IP, duration_seconds: int = 5) 
     kos = await connect_to_robot(robot_ip)
     if not kos:
         return {"success": False, "message": "Failed to connect to robot"}
-    
+
     try:
         logger.info(f"Starting IMU test for {duration_seconds} seconds...")
-        
+
         count = 0
         start_time = time.time()
         end_time = start_time + duration_seconds
@@ -133,7 +131,7 @@ async def test_imu(robot_ip: str = DEFAULT_ROBOT_IP, duration_seconds: int = 5) 
             imu_values = await kos.imu.get_imu_values()
             count += 1
             second_count += 1
-            
+
             # Store values
             accel_x.append(imu_values.accel_x)
             accel_y.append(imu_values.accel_y)
@@ -161,7 +159,7 @@ async def test_imu(robot_ip: str = DEFAULT_ROBOT_IP, duration_seconds: int = 5) 
         logger.info(f"Total samples: {count}")
         logger.info(f"Elapsed time: {elapsed_time:.2f} seconds")
         logger.info(f"Average sampling rate: {avg_rate:.2f} Hz")
-        
+
         # Calculate statistics
         accel_stats = {
             "x_mean": np.mean(accel_x),
@@ -169,18 +167,18 @@ async def test_imu(robot_ip: str = DEFAULT_ROBOT_IP, duration_seconds: int = 5) 
             "z_mean": np.mean(accel_z),
             "x_std": np.std(accel_x),
             "y_std": np.std(accel_y),
-            "z_std": np.std(accel_z)
+            "z_std": np.std(accel_z),
         }
-        
+
         gyro_stats = {
             "x_mean": np.mean(gyro_x),
             "y_mean": np.mean(gyro_y),
             "z_mean": np.mean(gyro_z),
             "x_std": np.std(gyro_x),
             "y_std": np.std(gyro_y),
-            "z_std": np.std(gyro_z)
+            "z_std": np.std(gyro_z),
         }
-        
+
         # Create results object
         results = ImuTestResults(
             avg_rate=avg_rate,
@@ -196,9 +194,9 @@ async def test_imu(robot_ip: str = DEFAULT_ROBOT_IP, duration_seconds: int = 5) 
             gyro_z=gyro_z,
             mag_x=mag_x,
             mag_y=mag_y,
-            mag_z=mag_z
+            mag_z=mag_z,
         )
-        
+
         return {
             "success": True,
             "message": "IMU test completed successfully",
@@ -207,9 +205,9 @@ async def test_imu(robot_ip: str = DEFAULT_ROBOT_IP, duration_seconds: int = 5) 
             "duration": elapsed_time,
             "accel_stats": accel_stats,
             "gyro_stats": gyro_stats,
-            "results": results
+            "results": results,
         }
-    
+
     except Exception as e:
         logger.error(f"Error testing IMU: {e}")
         return {"success": False, "message": f"Error testing IMU: {str(e)}"}
@@ -220,12 +218,12 @@ async def plot_imu_data(robot_ip: str = DEFAULT_ROBOT_IP, duration_seconds: int 
     try:
         # Run the IMU test to collect data
         result = await test_imu(robot_ip, duration_seconds)
-        
+
         if not result.get("success", False):
             return result
-        
+
         results = result["results"]
-        
+
         # Create figure with 2x2 subplots
         fig, axs = plt.subplots(2, 2, figsize=(12, 10))
         fig.suptitle("IMU Sensor Data Analysis", fontsize=16)
@@ -275,13 +273,9 @@ async def plot_imu_data(robot_ip: str = DEFAULT_ROBOT_IP, duration_seconds: int 
 
         plt.tight_layout(rect=[0, 0, 1, 0.96])  # Adjust for the suptitle
         plt.show()
-        
-        return {
-            "success": True,
-            "message": "IMU data plotted successfully",
-            "results": results
-        }
-    
+
+        return {"success": True, "message": "IMU data plotted successfully", "results": results}
+
     except Exception as e:
         logger.error(f"Error plotting IMU data: {e}")
         return {"success": False, "message": f"Error plotting IMU data: {str(e)}"}
@@ -292,10 +286,10 @@ async def get_imu_values(robot_ip: str = DEFAULT_ROBOT_IP) -> Dict[str, Any]:
     kos = await connect_to_robot(robot_ip)
     if not kos:
         return {"success": False, "message": "Failed to connect to robot"}
-    
+
     try:
         imu_values = await kos.imu.get_imu_values()
-        
+
         return {
             "success": True,
             "message": "IMU values retrieved successfully",
@@ -307,16 +301,22 @@ async def get_imu_values(robot_ip: str = DEFAULT_ROBOT_IP) -> Dict[str, Any]:
             "gyro_z": imu_values.gyro_z,
             "mag_x": imu_values.mag_x,
             "mag_y": imu_values.mag_y,
-            "mag_z": imu_values.mag_z
+            "mag_z": imu_values.mag_z,
         }
-    
+
     except Exception as e:
         logger.error(f"Error getting IMU values: {e}")
         return {"success": False, "message": f"Error getting IMU values: {str(e)}"}
 
 
-def compute_euler_angles(accel_x: float, accel_y: float, accel_z: float, 
-                         mag_x: Optional[float], mag_y: Optional[float], mag_z: Optional[float]) -> Tuple[float, float, float]:
+def compute_euler_angles(
+    accel_x: float,
+    accel_y: float,
+    accel_z: float,
+    mag_x: Optional[float],
+    mag_y: Optional[float],
+    mag_z: Optional[float],
+) -> Tuple[float, float, float]:
     """Compute Euler angles (roll, pitch, yaw) from IMU sensor values."""
     # Compute roll and pitch from accelerometer
     roll = np.arctan2(accel_y, accel_z)
@@ -326,15 +326,11 @@ def compute_euler_angles(accel_x: float, accel_y: float, accel_z: float,
     if mag_x is not None and mag_y is not None and mag_z is not None:
         # Tilt compensation for magnetometer
         mag_x_comp = mag_x * np.cos(pitch) + mag_z * np.sin(pitch)
-        mag_y_comp = (
-            mag_x * np.sin(roll) * np.sin(pitch)
-            + mag_y * np.cos(roll)
-            - mag_z * np.sin(roll) * np.cos(pitch)
-        )
+        mag_y_comp = mag_x * np.sin(roll) * np.sin(pitch) + mag_y * np.cos(roll) - mag_z * np.sin(roll) * np.cos(pitch)
         yaw = np.arctan2(-mag_y_comp, mag_x_comp)
     else:
         yaw = 0.0  # Default if no magnetometer
-    
+
     return roll, pitch, yaw
 
 
@@ -346,8 +342,16 @@ def euler_to_rotation_matrix(roll: float, pitch: float, yaw: float) -> np.ndarra
     return r_z.dot(r_y).dot(r_x)
 
 
-def reset_3d_axis(ax: Axes3D, xlim: Tuple[float, float], ylim: Tuple[float, float], 
-                 zlim: Tuple[float, float], xlabel: str, ylabel: str, zlabel: str, title: str) -> None:
+def reset_3d_axis(
+    ax: Axes3D,
+    xlim: Tuple[float, float],
+    ylim: Tuple[float, float],
+    zlim: Tuple[float, float],
+    xlabel: str,
+    ylabel: str,
+    zlabel: str,
+    title: str,
+) -> None:
     """Reset a 3D axis with the given limits, labels, and title."""
     ax.cla()
     ax.set_xlim(xlim)
@@ -364,12 +368,12 @@ async def visualize_orientation(robot_ip: str = DEFAULT_ROBOT_IP, duration_secon
     kos = await connect_to_robot(robot_ip)
     if not kos:
         return {"success": False, "message": "Failed to connect to robot"}
-    
+
     try:
         plt.ion()  # enable interactive mode
         fig = plt.figure(figsize=(12, 6))
-        ax_orient = fig.add_subplot(121, projection='3d')
-        ax_accel = fig.add_subplot(122, projection='3d')
+        ax_orient = fig.add_subplot(121, projection="3d")
+        ax_accel = fig.add_subplot(122, projection="3d")
         fig.suptitle("Real-time IMU Visualization", fontsize=16)
 
         # Set axis properties
@@ -382,7 +386,7 @@ async def visualize_orientation(robot_ip: str = DEFAULT_ROBOT_IP, duration_secon
         orientation_euler = np.array([0.0, 0.0, 0.0])
         last_second = int(start_time)
         second_count = 0
-        
+
         logger.info(f"Starting orientation visualization for {duration_seconds} seconds...")
         logger.info("Press Ctrl+C to stop early")
 
@@ -393,7 +397,7 @@ async def visualize_orientation(robot_ip: str = DEFAULT_ROBOT_IP, duration_secon
             current_time = time.time()
             dt = current_time - last_update_time
             last_update_time = current_time
-            
+
             # Update orientation by integrating gyro values
             orientation_euler[0] += np.deg2rad(imu_values.gyro_x) * dt
             orientation_euler[1] += np.deg2rad(imu_values.gyro_y) * dt
@@ -432,21 +436,15 @@ async def visualize_orientation(robot_ip: str = DEFAULT_ROBOT_IP, duration_secon
 
         plt.ioff()
         plt.close()
-        
-        return {
-            "success": True,
-            "message": "Orientation visualization completed successfully"
-        }
-    
+
+        return {"success": True, "message": "Orientation visualization completed successfully"}
+
     except KeyboardInterrupt:
         plt.ioff()
         plt.close()
         logger.info("Visualization interrupted by user")
-        return {
-            "success": True,
-            "message": "Orientation visualization interrupted by user"
-        }
-    
+        return {"success": True, "message": "Orientation visualization interrupted by user"}
+
     except Exception as e:
         plt.ioff()
         plt.close()
@@ -477,7 +475,8 @@ def visualize_orientation_sync(robot_ip: str = DEFAULT_ROBOT_IP, duration_second
 
 def help():
     """Print help information about the IMU testing module."""
-    print("""
+    print(
+        """
 IMU Testing Module for KOS Robots
 ================================
 
@@ -516,17 +515,12 @@ imu.plot_imu_data_sync()
 
 # Visualize orientation in real-time
 imu.visualize_orientation_sync(duration_seconds=30)
-""")
+"""
+    )
 
 
 # Define what gets imported with "from kos_sdk.tests.imu import *"
-__all__ = [
-    'test_imu_sync',
-    'plot_imu_data_sync',
-    'get_imu_values_sync',
-    'visualize_orientation_sync',
-    'help'
-]
+__all__ = ["test_imu_sync", "plot_imu_data_sync", "get_imu_values_sync", "visualize_orientation_sync", "help"]
 
 
 if __name__ == "__main__":

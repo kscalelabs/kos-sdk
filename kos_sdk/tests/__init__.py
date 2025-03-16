@@ -27,6 +27,7 @@ from kos_sdk.tests.servos import test_servo_sync
 
 # Import submodules to make them available directly
 from . import test_servos as servos
+
 # from . import test_camera as camera
 from . import test_microphone as microphone
 from . import test_led as led
@@ -34,15 +35,16 @@ from . import test_imu as imu
 from . import test_connection as connection
 
 # Define what gets imported with "from kos_sdk.tests import *"
-__all__ = ['servos', 'camera', 'microphone', 'led', 'imu', 'connection']
+__all__ = ["servos", "camera", "microphone", "led", "imu", "connection"]
 
 # Package version
-__version__ = '0.1.0'
+__version__ = "0.1.0"
 
 
 def help():
     """Print help information about the testing package."""
-    print("""
+    print(
+        """
 KOS SDK Testing Package
 ======================
 
@@ -95,4 +97,5 @@ result = test_connection_sync()
 # For more details on each module, use their specific help functions:
 from kos_sdk.tests import servos
 servos.help()
-""") 
+"""
+    )
