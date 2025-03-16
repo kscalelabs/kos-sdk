@@ -55,10 +55,7 @@ import pykos
 from mpl_toolkits.mplot3d import Axes3D
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO, 
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 # Default configuration
@@ -151,8 +148,7 @@ async def test_imu(robot_ip: str = DEFAULT_ROBOT_IP, duration_seconds: int = 5) 
                 timestamps.append(current_second - start_time)
                 samples_per_second.append(second_count)
                 logger.info(
-                    f"Time: {current_second - start_time:.2f} seconds - "
-                    f"Samples this second: {second_count}"
+                    f"Time: {current_second - start_time:.2f} seconds - " f"Samples this second: {second_count}"
                 )
                 second_count = 0
                 last_second = current_second
@@ -238,11 +234,7 @@ async def plot_imu_data(robot_ip: str = DEFAULT_ROBOT_IP, duration_seconds: int 
 
         # Plot 1: Sampling rate over time
         ax_rate.plot(
-            results.timestamps[1:], 
-            results.samples_per_second[1:], 
-            marker="o", 
-            linestyle="-", 
-            label="Samples/second"
+            results.timestamps[1:], results.samples_per_second[1:], marker="o", linestyle="-", label="Samples/second"
         )
         ax_rate.set_xlabel("Time (seconds)")
         ax_rate.set_ylabel("Samples per Second")
@@ -335,11 +327,7 @@ def compute_euler_angles(
     if mag_x is not None and mag_y is not None and mag_z is not None:
         # Tilt compensation for magnetometer
         mag_x_comp = mag_x * np.cos(pitch) + mag_z * np.sin(pitch)
-        mag_y_comp = (
-            mag_x * np.sin(roll) * np.sin(pitch) 
-            + mag_y * np.cos(roll) 
-            - mag_z * np.sin(roll) * np.cos(pitch)
-        )
+        mag_y_comp = mag_x * np.sin(roll) * np.sin(pitch) + mag_y * np.cos(roll) - mag_z * np.sin(roll) * np.cos(pitch)
         yaw = np.arctan2(-mag_y_comp, mag_x_comp)
     else:
         yaw = 0.0  # Default if no magnetometer
@@ -349,21 +337,9 @@ def compute_euler_angles(
 
 def euler_to_rotation_matrix(roll: float, pitch: float, yaw: float) -> np.ndarray:
     """Convert Euler angles to a rotation matrix."""
-    r_x = np.array([
-        [1, 0, 0], 
-        [0, np.cos(roll), -np.sin(roll)], 
-        [0, np.sin(roll), np.cos(roll)]
-    ])
-    r_y = np.array([
-        [np.cos(pitch), 0, np.sin(pitch)], 
-        [0, 1, 0], 
-        [-np.sin(pitch), 0, np.cos(pitch)]
-    ])
-    r_z = np.array([
-        [np.cos(yaw), -np.sin(yaw), 0], 
-        [np.sin(yaw), np.cos(yaw), 0], 
-        [0, 0, 1]
-    ])
+    r_x = np.array([[1, 0, 0], [0, np.cos(roll), -np.sin(roll)], [0, np.sin(roll), np.cos(roll)]])
+    r_y = np.array([[np.cos(pitch), 0, np.sin(pitch)], [0, 1, 0], [-np.sin(pitch), 0, np.cos(pitch)]])
+    r_z = np.array([[np.cos(yaw), -np.sin(yaw), 0], [np.sin(yaw), np.cos(yaw), 0], [0, 0, 1]])
     return r_z.dot(r_y).dot(r_x)
 
 
@@ -388,10 +364,7 @@ def reset_3d_axis(
     ax.set_title(title)
 
 
-async def visualize_orientation(
-    robot_ip: str = DEFAULT_ROBOT_IP, 
-    duration_seconds: int = 10
-) -> Dict[str, Any]:
+async def visualize_orientation(robot_ip: str = DEFAULT_ROBOT_IP, duration_seconds: int = 10) -> Dict[str, Any]:
     """Display a real-time 3D visualization of the robot's orientation."""
     kos = await connect_to_robot(robot_ip)
     if not kos:
@@ -405,12 +378,8 @@ async def visualize_orientation(
         fig.suptitle("Real-time IMU Visualization", fontsize=16)
 
         # Set axis properties
-        reset_3d_axis(
-            ax_orient, (-1.5, 1.5), (-1.5, 1.5), (-1.5, 1.5), "X", "Y", "Z", "Orientation"
-        )
-        reset_3d_axis(
-            ax_accel, (-10, 10), (-10, 10), (-10, 10), "X", "Y", "Z", "Acceleration Vector"
-        )
+        reset_3d_axis(ax_orient, (-1.5, 1.5), (-1.5, 1.5), (-1.5, 1.5), "X", "Y", "Z", "Orientation")
+        reset_3d_axis(ax_accel, (-10, 10), (-10, 10), (-10, 10), "X", "Y", "Z", "Acceleration Vector")
 
         start_time = time.time()
         last_update_time = start_time
@@ -439,16 +408,13 @@ async def visualize_orientation(
             current_second = int(time.time())
             if current_second != last_second:
                 logger.info(
-                    f"Time: {current_second - start_time:.2f} seconds - "
-                    f"Samples this second: {second_count}"
+                    f"Time: {current_second - start_time:.2f} seconds - " f"Samples this second: {second_count}"
                 )
                 second_count = 0
                 last_second = current_second
 
             # Compute rotation matrix
-            r = euler_to_rotation_matrix(
-                orientation_euler[0], orientation_euler[1], orientation_euler[2]
-            )
+            r = euler_to_rotation_matrix(orientation_euler[0], orientation_euler[1], orientation_euler[2])
 
             # Compute rotated coordinate axes
             x_axis = r.dot(np.array([1, 0, 0]))
@@ -456,12 +422,8 @@ async def visualize_orientation(
             z_axis = r.dot(np.array([0, 0, 1]))
 
             # Reset axes
-            reset_3d_axis(
-                ax_orient, (-1.5, 1.5), (-1.5, 1.5), (-1.5, 1.5), "X", "Y", "Z", "Orientation"
-            )
-            reset_3d_axis(
-                ax_accel, (-10, 10), (-10, 10), (-10, 10), "X", "Y", "Z", "Acceleration Vector"
-            )
+            reset_3d_axis(ax_orient, (-1.5, 1.5), (-1.5, 1.5), (-1.5, 1.5), "X", "Y", "Z", "Orientation")
+            reset_3d_axis(ax_accel, (-10, 10), (-10, 10), (-10, 10), "X", "Y", "Z", "Acceleration Vector")
 
             # Plot coordinate frame
             ax_orient.quiver(0, 0, 0, x_axis[0], x_axis[1], x_axis[2], color="r", label="X")
@@ -470,9 +432,7 @@ async def visualize_orientation(
 
             # Plot acceleration vector
             accel_vec = np.array([imu_values.accel_x, imu_values.accel_y, imu_values.accel_z])
-            ax_accel.quiver(
-                0, 0, 0, accel_vec[0], accel_vec[1], accel_vec[2], color="m", label="Accel"
-            )
+            ax_accel.quiver(0, 0, 0, accel_vec[0], accel_vec[1], accel_vec[2], color="m", label="Accel")
 
             plt.draw()
             plt.pause(0.01)
@@ -511,10 +471,7 @@ def get_imu_values_sync(robot_ip: str = DEFAULT_ROBOT_IP) -> Dict[str, Any]:
     return asyncio.run(get_imu_values(robot_ip))
 
 
-def visualize_orientation_sync(
-    robot_ip: str = DEFAULT_ROBOT_IP, 
-    duration_seconds: int = 10
-) -> Dict[str, Any]:
+def visualize_orientation_sync(robot_ip: str = DEFAULT_ROBOT_IP, duration_seconds: int = 10) -> Dict[str, Any]:
     """Synchronous wrapper for visualize_orientation."""
     return asyncio.run(visualize_orientation(robot_ip, duration_seconds))
 
@@ -566,13 +523,7 @@ imu.visualize_orientation_sync(duration_seconds=30)
 
 
 # Define what gets imported with "from kos_sdk.tests.imu import *"
-__all__ = [
-    "test_imu_sync", 
-    "plot_imu_data_sync", 
-    "get_imu_values_sync", 
-    "visualize_orientation_sync", 
-    "help"
-]
+__all__ = ["test_imu_sync", "plot_imu_data_sync", "get_imu_values_sync", "visualize_orientation_sync", "help"]
 
 
 if __name__ == "__main__":

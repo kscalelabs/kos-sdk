@@ -46,7 +46,9 @@ class KeyboardActor(ActorRobot):
             btn_frame.pack(side=tk.RIGHT)
 
             decrease_btn = ttk.Button(
-                btn_frame, text="-5°", command=lambda n=joint_name: self._update_angle(n, -5.0),
+                btn_frame,
+                text="-5°",
+                command=lambda n=joint_name: self._update_angle(n, -5.0),
             )
             decrease_btn.pack(side=tk.LEFT, padx=2)
 
@@ -61,7 +63,9 @@ class KeyboardActor(ActorRobot):
             fine_increase_btn.pack(side=tk.LEFT, padx=2)
 
             increase_btn = ttk.Button(
-                btn_frame, text="+5°", command=lambda n=joint_name: self._update_angle(n, 5.0),
+                btn_frame,
+                text="+5°",
+                command=lambda n=joint_name: self._update_angle(n, 5.0),
             )
             increase_btn.pack(side=tk.LEFT, padx=2)
 
