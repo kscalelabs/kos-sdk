@@ -30,7 +30,10 @@ from typing import Any, Dict, List, Optional, Set
 import pykos
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, 
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 # Default configuration
@@ -101,7 +104,10 @@ async def connect_to_robot(robot_ip: str) -> Optional[pykos.KOS]:
 
 
 async def test_actuator_movement(
-    kos, actuator_id: int, movement_degrees: float = DEFAULT_MOVEMENT_DEGREES, wait_time: float = DEFAULT_WAIT_TIME
+    kos, 
+    actuator_id: int, 
+    movement_degrees: float = DEFAULT_MOVEMENT_DEGREES, 
+    wait_time: float = DEFAULT_WAIT_TIME
 ) -> Dict[str, Any]:
     """Test if an actuator can move and return to its original position."""
     if not validate_actuator_id(actuator_id):
@@ -122,7 +128,11 @@ async def test_actuator_movement(
         # Configure the actuator
         logger.info(f"Configuring {name}...")
         await kos.actuator.configure_actuator(
-            actuator_id=actuator_id, kp=DEFAULT_KP, kd=DEFAULT_KD, max_torque=DEFAULT_MAX_TORQUE, torque_enabled=True
+            actuator_id=actuator_id, 
+            kp=DEFAULT_KP, 
+            kd=DEFAULT_KD, 
+            max_torque=DEFAULT_MAX_TORQUE, 
+            torque_enabled=True
         )
 
         # Move forward
@@ -207,7 +217,8 @@ async def get_actuator_state(kos, actuator_id: int) -> Dict[str, Any]:
 
 
 async def test_servos(
-    robot_ip: str = DEFAULT_ROBOT_IP, actuator_ids: List[int] = DEFAULT_TEST_ACTUATORS
+    robot_ip: str = DEFAULT_ROBOT_IP, 
+    actuator_ids: List[int] = DEFAULT_TEST_ACTUATORS
 ) -> Dict[int, Dict[str, Any]]:
     """Test multiple servos."""
     # Input validation with user-friendly messages
@@ -224,7 +235,8 @@ async def test_servos(
     kos = await connect_to_robot(robot_ip)
     if not kos:
         print(
-            f"❌ Error: Failed to connect to robot at {robot_ip}. Please check the IP address and network connection."
+            f"❌ Error: Failed to connect to robot at {robot_ip}. "
+            f"Please check the IP address and network connection."
         )
         return {"error": "Failed to connect to robot"}
 
@@ -270,7 +282,10 @@ async def test_servo(robot_ip: str = DEFAULT_ROBOT_IP, actuator_id: int = 11) ->
 
 
 async def move_servo(
-    robot_ip: str = DEFAULT_ROBOT_IP, actuator_id: int = 11, position: float = None, relative_movement: float = None
+    robot_ip: str = DEFAULT_ROBOT_IP, 
+    actuator_id: int = 11, 
+    position: float = None, 
+    relative_movement: float = None
 ) -> Dict[str, Any]:
     """Move a servo to a position or by a relative amount."""
     if position is None and relative_movement is None:
@@ -298,7 +313,11 @@ async def move_servo(
         name = ID_TO_NAME.get(actuator_id, f"Actuator {actuator_id}")
         logger.info(f"Configuring {name}...")
         await kos.actuator.configure_actuator(
-            actuator_id=actuator_id, kp=DEFAULT_KP, kd=DEFAULT_KD, max_torque=DEFAULT_MAX_TORQUE, torque_enabled=True
+            actuator_id=actuator_id, 
+            kp=DEFAULT_KP, 
+            kd=DEFAULT_KD, 
+            max_torque=DEFAULT_MAX_TORQUE, 
+            torque_enabled=True
         )
 
         # Get state before moving
@@ -415,7 +434,8 @@ def test_servo_sync(robot_ip: str = DEFAULT_ROBOT_IP, actuator_id: int = 11) -> 
 
 
 def test_servos_sync(
-    robot_ip: str = DEFAULT_ROBOT_IP, actuator_ids: List[int] = DEFAULT_TEST_ACTUATORS
+    robot_ip: str = DEFAULT_ROBOT_IP, 
+    actuator_ids: List[int] = DEFAULT_TEST_ACTUATORS
 ) -> Dict[int, Dict[str, Any]]:
     """Synchronous wrapper for test_servos."""
     # Input validation before running async code
@@ -444,7 +464,10 @@ def get_servo_state_sync(robot_ip: str = DEFAULT_ROBOT_IP, actuator_id: int = 11
 
 
 def move_servo_sync(
-    robot_ip: str = DEFAULT_ROBOT_IP, actuator_id: int = 11, position: float = None, relative_movement: float = None
+    robot_ip: str = DEFAULT_ROBOT_IP, 
+    actuator_id: int = 11, 
+    position: float = None, 
+    relative_movement: float = None
 ) -> Dict[str, Any]:
     """Synchronous wrapper for move_servo."""
     # Input validation before running async code

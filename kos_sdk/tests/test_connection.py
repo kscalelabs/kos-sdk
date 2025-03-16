@@ -46,7 +46,10 @@ from typing import Any, Dict
 import pykos
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, 
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 # Default configuration
@@ -59,7 +62,13 @@ async def test_connection(robot_ip: str = DEFAULT_ROBOT_IP) -> Dict[str, Any]:
 
     This function checks if the robot is reachable and if the KOS API is responding.
     """
-    result = {"success": False, "ip_reachable": False, "api_responding": False, "message": "", "details": {}}
+    result = {
+        "success": False, 
+        "ip_reachable": False, 
+        "api_responding": False, 
+        "message": "", 
+        "details": {}
+    }
 
     # First, check if the IP is reachable with a simple socket connection
     try:
@@ -75,7 +84,9 @@ async def test_connection(robot_ip: str = DEFAULT_ROBOT_IP) -> Dict[str, Any]:
         sock.close()
         result["ip_reachable"] = True
         result["details"]["tcp_connection_time_ms"] = round(connection_time * 1000, 2)
-        logger.info(f"TCP connection successful ({result['details']['tcp_connection_time_ms']} ms)")
+        logger.info(
+            f"TCP connection successful ({result['details']['tcp_connection_time_ms']} ms)"
+        )
     except socket.error as e:
         result["message"] = f"Failed to connect to robot at {robot_ip}: {str(e)}"
         logger.error(f"{result['message']}")
@@ -103,7 +114,10 @@ async def test_connection(robot_ip: str = DEFAULT_ROBOT_IP) -> Dict[str, Any]:
     return result
 
 
-async def measure_latency(robot_ip: str = DEFAULT_ROBOT_IP, num_pings: int = 10) -> Dict[str, Any]:
+async def measure_latency(
+    robot_ip: str = DEFAULT_ROBOT_IP, 
+    num_pings: int = 10
+) -> Dict[str, Any]:
     """Measure the round-trip latency between the client and the robot.
 
     Args:
@@ -159,7 +173,10 @@ def test_connection_sync(robot_ip: str = DEFAULT_ROBOT_IP) -> Dict[str, Any]:
     return asyncio.run(test_connection(robot_ip))
 
 
-def measure_latency_sync(robot_ip: str = DEFAULT_ROBOT_IP, num_pings: int = 10) -> Dict[str, Any]:
+def measure_latency_sync(
+    robot_ip: str = DEFAULT_ROBOT_IP, 
+    num_pings: int = 10
+) -> Dict[str, Any]:
     """Synchronous wrapper for measure_latency."""
     return asyncio.run(measure_latency(robot_ip, num_pings))
 
@@ -215,8 +232,12 @@ if __name__ == "__main__":
             print(f"IP reachable: {result['ip_reachable']}")
             print(f"API responding: {result['api_responding']}")
             if "details" in result:
-                print(f"TCP connection time: {result['details'].get('tcp_connection_time_ms', 'N/A')} ms")
-                print(f"API response time: {result['details'].get('api_response_time_ms', 'N/A')} ms")
+                print(
+                    f"TCP connection time: {result['details'].get('tcp_connection_time_ms', 'N/A')} ms"
+                )
+                print(
+                    f"API response time: {result['details'].get('api_response_time_ms', 'N/A')} ms"
+                )
 
             # If connection is successful, measure latency
             print("\nMeasuring connection latency...")

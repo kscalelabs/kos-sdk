@@ -57,7 +57,10 @@ import pykos
 from PIL import Image, ImageDraw
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, 
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 # Default configuration
@@ -130,7 +133,10 @@ async def fill_display(robot_ip: str = DEFAULT_ROBOT_IP) -> Dict[str, Any]:
         return {"success": False, "message": f"Error filling LED display: {str(e)}"}
 
 
-async def display_pattern(pattern_type: str = "checkerboard", robot_ip: str = DEFAULT_ROBOT_IP) -> Dict[str, Any]:
+async def display_pattern(
+    pattern_type: str = "checkerboard", 
+    robot_ip: str = DEFAULT_ROBOT_IP
+) -> Dict[str, Any]:
     """Display a test pattern on the LED matrix."""
     kos = await connect_to_robot(robot_ip)
     if not kos:
@@ -170,7 +176,8 @@ async def display_pattern(pattern_type: str = "checkerboard", robot_ip: str = DE
         else:
             return {
                 "success": False,
-                "message": f"Unknown pattern type: {pattern_type}. Valid types are: checkerboard, border, cross",
+                "message": f"Unknown pattern type: {pattern_type}. "
+                           f"Valid types are: checkerboard, border, cross",
             }
 
         # Send to LED matrix
@@ -246,7 +253,10 @@ def fill_display_sync(robot_ip: str = DEFAULT_ROBOT_IP) -> Dict[str, Any]:
     return asyncio.run(fill_display(robot_ip))
 
 
-def display_pattern_sync(pattern_type: str = "checkerboard", robot_ip: str = DEFAULT_ROBOT_IP) -> Dict[str, Any]:
+def display_pattern_sync(
+    pattern_type: str = "checkerboard", 
+    robot_ip: str = DEFAULT_ROBOT_IP
+) -> Dict[str, Any]:
     """Synchronous wrapper for display_pattern."""
     return asyncio.run(display_pattern(pattern_type, robot_ip))
 
@@ -306,7 +316,13 @@ led.clear_display_sync()
 
 
 # Define what gets imported with "from kos_sdk.tests.led import *"
-__all__ = ["clear_display_sync", "fill_display_sync", "display_pattern_sync", "run_test_sequence_sync", "help"]
+__all__ = [
+    "clear_display_sync", 
+    "fill_display_sync", 
+    "display_pattern_sync", 
+    "run_test_sequence_sync", 
+    "help"
+]
 
 
 if __name__ == "__main__":
