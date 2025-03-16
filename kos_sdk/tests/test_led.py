@@ -50,12 +50,11 @@ led.help()
 """
 
 import asyncio
-import time
 import logging
-from typing import Dict, Any, Optional
-from PIL import Image, ImageDraw
+from typing import Any, Dict, Optional
 
 import pykos
+from PIL import Image, ImageDraw
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")

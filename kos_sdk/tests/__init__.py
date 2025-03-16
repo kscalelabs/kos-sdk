@@ -25,14 +25,13 @@ from kos_sdk.tests import servos, camera, microphone, led, imu, connection
 from kos_sdk.tests.servos import test_servo_sync
 """
 
-# Import submodules to make them available directly
-from . import test_servos as servos
-
 # from . import test_camera as camera
-from . import test_microphone as microphone
-from . import test_led as led
-from . import test_imu as imu
+# Import submodules to make them available directly
 from . import test_connection as connection
+from . import test_imu as imu
+from . import test_led as led
+from . import test_microphone as microphone
+from . import test_servos as servos
 
 # Define what gets imported with "from kos_sdk.tests import *"
 __all__ = ["servos", "camera", "microphone", "led", "imu", "connection"]

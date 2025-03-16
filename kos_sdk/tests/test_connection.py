@@ -41,7 +41,7 @@ import asyncio
 import logging
 import socket
 import time
-from typing import Dict, List, Any, Optional
+from typing import Any, Dict
 
 import pykos
 

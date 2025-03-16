@@ -23,10 +23,11 @@ list_available_servos_sync(robot_ip="10.33.10.65")
     List all available servos and their current status.
 """
 
-import pykos
 import asyncio
 import logging
-from typing import List, Dict, Any, Optional, Set
+from typing import Any, Dict, List, Optional, Set
+
+import pykos
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
