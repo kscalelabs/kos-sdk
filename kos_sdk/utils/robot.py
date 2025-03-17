@@ -5,7 +5,7 @@ from typing import Any, Dict, Union
 
 from loguru import logger
 from pykos import KOS
-from sdk.utils.unit_types import Degree
+from kos_sdk.utils.unit_types import Degree
 
 JOINT_TO_ID = {
     # Left arm
