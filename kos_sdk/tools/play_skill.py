@@ -84,7 +84,8 @@ class PlaySkill:
             self.interpolation_time = 0.0
             if self.current_frame_index < len(self.skill_data.frames):
                 self.current_positions = self.skill_data.frames[
-                    self.current_frame_index].joint_positions.copy()
+                    self.current_frame_index
+                ].joint_positions.copy()
             return
 
         # Interpolate between current and next frame
