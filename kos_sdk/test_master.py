@@ -1,7 +1,9 @@
-import tests
 import asyncio
-from utils.robot import RobotInterface
+
 from loguru import logger
+from utils.robot import RobotInterface
+
+import tests
 
 robot = RobotInterface(ip="10.33.10.65")
 
@@ -9,7 +11,11 @@ robot = RobotInterface(ip="10.33.10.65")
 async def main():
     test_functions = [
         ("Connection Test", tests.connection.test_connection, [robot.ip]),
-        ("Actuator Connection Test", tests.actuators_connection.test_actuator_connection, [robot.ip]),
+        (
+            "Actuator Connection Test",
+            tests.actuators_connection.test_actuator_connection,
+            [robot.ip],
+        ),
         ("LED Test", tests.led.test_led, [robot.ip]),
         ("Actuator Movement Test", tests.servos.test_actuator_movement, [robot.ip]),
         ("IMU Data Test", tests.imu.plot_imu_data, [robot.ip, 2]),

@@ -1,7 +1,8 @@
 import asyncio
-from PIL import Image
-from loguru import logger
+
 import pykos
+from loguru import logger
+from PIL import Image
 
 GRID_SIZE = (32, 16)
 

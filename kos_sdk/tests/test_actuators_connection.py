@@ -1,6 +1,7 @@
-from utils.robot import RobotInterface, JOINT_TO_ID, ID_TO_JOINT
-from loguru import logger
 from typing import Dict
+
+from loguru import logger
+from utils.robot import ID_TO_JOINT, JOINT_TO_ID, RobotInterface
 
 
 async def test_actuator_connection(robot_ip: str = "") -> Dict:
@@ -29,7 +30,9 @@ async def test_actuator_connection(robot_ip: str = "") -> Dict:
                 "responding_ids": sorted(list(responding_ids)),
                 "missing_ids": sorted(list(missing_ids)),
                 "missing_joints": (
-                    sorted([ID_TO_JOINT.get(id, f"Unknown-{id}") for id in missing_ids]) if missing_ids else []
+                    sorted([ID_TO_JOINT.get(id, f"Unknown-{id}") for id in missing_ids])
+                    if missing_ids
+                    else []
                 ),
             }
 

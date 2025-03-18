@@ -7,6 +7,7 @@ from typing import Any, Dict, List
 import matplotlib.pyplot as plt
 import numpy as np
 from loguru import logger
+
 from kos_sdk.utils.robot import RobotInterface
 
 
@@ -156,7 +157,11 @@ async def plot_imu_data(robot_ip: str = "", duration_seconds: int = 5) -> Dict[s
 
         # Plot sampling rate
         ax_rate.plot(
-            results.timestamps[1:], results.samples_per_second[1:], marker="o", linestyle="-", label="Samples/second"
+            results.timestamps[1:],
+            results.samples_per_second[1:],
+            marker="o",
+            linestyle="-",
+            label="Samples/second",
         )
         ax_rate.set_xlabel("Time (seconds)")
         ax_rate.set_ylabel("Samples per Second")
