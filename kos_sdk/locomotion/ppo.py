@@ -14,7 +14,7 @@ import os
 import time
 from typing import cast
 
-import colorlogging
+import colorlogging  # type: ignore
 import numpy as np
 import onnxruntime as ort
 import pykos
