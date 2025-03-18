@@ -8,7 +8,10 @@ DEFAULT_MOVEMENT_DEGREES = 10.0
 DEFAULT_WAIT_TIME = 0.5
 
 
-async def test_actuator_movement(robot_ip: str = "", actuator_id: Optional[int] = None) -> Dict[str, Any]:
+async def test_actuator_movement(
+    robot_ip: str = "",
+    actuator_id: Optional[int] = None,
+) -> Dict[str, Any]:
     """Test actuators and report which ones moved successfully."""
 
     async with RobotInterface(ip=robot_ip) as robot:
@@ -40,7 +43,11 @@ async def test_actuator_movement(robot_ip: str = "", actuator_id: Optional[int] 
         return results
 
 
-async def test_single_actuator(robot: RobotInterface, actuator_id: int, name: str) -> Tuple[bool, Optional[str]]:
+async def test_single_actuator(
+    robot: RobotInterface,
+    actuator_id: int,
+    name: str,
+) -> Tuple[bool, Optional[str]]:
     """Test a single actuator and return (success, reason)."""
     try:
         state = await robot.kos.actuator.get_actuators_state([actuator_id])
@@ -59,7 +66,10 @@ async def test_single_actuator(robot: RobotInterface, actuator_id: int, name: st
 
         await robot.set_real_command_positions({name: current_position})
         await asyncio.sleep(DEFAULT_WAIT_TIME)
-        await robot.kos.actuator.configure_actuator(actuator_id=actuator_id, torque_enabled=False)
+        await robot.kos.actuator.configure_actuator(
+            actuator_id=actuator_id,
+            torque_enabled=False,
+        )
 
         logger.info(f"{name} {'moved successfully' if moved else 'did not move'}")
         return moved, None if moved else "Did not move"
@@ -67,9 +77,12 @@ async def test_single_actuator(robot: RobotInterface, actuator_id: int, name: st
     except Exception as e:
         logger.error(f"Error testing {name}: {e}")
         try:
-            await robot.kos.actuator.configure_actuator(actuator_id=actuator_id, torque_enabled=False)
-        except:
-            pass
+            await robot.kos.actuator.configure_actuator(
+                actuator_id=actuator_id,
+                torque_enabled=False,
+            )
+        except Exception as e:
+            logger.error(f"Error configuring actuator {actuator_id}: {e}")
         return False, str(e)
 
 
@@ -81,7 +94,9 @@ def log_test_results(results: Dict[str, List]) -> None:
 
     logger.info(f"\nFailed to move ({len(results['failed'])}):")
     for actuator in results["failed"]:
-        logger.info(f"  - {actuator['name']} (ID: {actuator['id']}): {actuator.get('reason', 'Unknown')}")
+        logger.info(
+            f"  - {actuator['name']} (ID: {actuator['id']}): {actuator.get('reason', 'Unknown')}"
+        )
 
 
 def test_servo_sync(robot_ip: str = "", actuator_id: Optional[int] = None) -> Dict[str, Any]:
