@@ -1,30 +1,32 @@
 import asyncio
+from typing import Any, Awaitable, Callable, List, Union
 
 from loguru import logger
-from utils.robot import RobotInterface
 
-import tests
+from kos_sdk.tests import actuators_connection, connection, imu, led, servos
+from kos_sdk.utils.robot import RobotInterface
 
 robot = RobotInterface(ip="10.33.10.65")
 
 
-async def main():
-    test_functions = [
-        ("Connection Test", tests.connection.test_connection, [robot.ip]),
-        (
-            "Actuator Connection Test",
-            tests.actuators_connection.test_actuator_connection,
-            [robot.ip],
-        ),
-        ("LED Test", tests.led.test_led, [robot.ip]),
-        ("Actuator Movement Test", tests.servos.test_actuator_movement, [robot.ip]),
-        ("IMU Data Test", tests.imu.plot_imu_data, [robot.ip, 2]),
+async def main() -> None:
+    test_functions: List[
+        tuple[str, Union[Callable[..., Any], Callable[..., Awaitable[Any]]], List[Any]]
+    ] = [
+        ("Connection Test", connection.test_connection, [robot.ip]),
+        ("Actuator Connection Test", actuators_connection.test_actuator_connection, [robot.ip]),
+        ("LED Test", led.test_led, [robot.ip]),
+        ("Actuator Movement Test", servos.test_actuator_movement, [robot.ip]),
+        ("IMU Test", imu.plot_imu_data, [robot.ip]),  # Use the async function directly
     ]
 
     for test_name, test_func, args in test_functions:
         logger.info(f"Running {test_name}...")
         try:
-            result = await test_func(*args)
+            if asyncio.iscoroutinefunction(test_func):
+                result = await test_func(*args)
+            else:
+                result = test_func(*args)
 
             # Check if the test returned a dictionary with a success field
             if isinstance(result, dict) and "success" in result and not result["success"]:

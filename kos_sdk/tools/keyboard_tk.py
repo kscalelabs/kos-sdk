@@ -2,11 +2,15 @@
 
 import tkinter as tk
 from tkinter import ttk
-from typing import Dict, Union
+from typing import Dict, Optional, Union
 
-from ks_digital_twin.actor.base import ActorRobot
-from unit_types import Degree
+from kos_sdk.utils.unit_types import Degree
 
+
+# Create a simple base class if you don't need the actual implementation
+class ActorRobot:
+    """Base class for actor robots."""
+    pass
 
 class KeyboardActor(ActorRobot):
     """Actor robot model that allows for keyboard control."""
@@ -20,6 +24,7 @@ class KeyboardActor(ActorRobot):
         """
         self.joint_names = joint_names
         self.current_joint_angles = {name: 0.0 for name in joint_names}
+        self.parent_frame = parent_frame
 
         # Create main frame
         main_frame = ttk.Frame(parent_frame, padding="10")
@@ -48,24 +53,24 @@ class KeyboardActor(ActorRobot):
             decrease_btn = ttk.Button(
                 btn_frame,
                 text="-5°",
-                command=lambda n=joint_name: self._update_angle(n, -5.0),
+                command=lambda n=joint_name: self._update_angle(n, -5.0),  # type: ignore
             )
             decrease_btn.pack(side=tk.LEFT, padx=2)
 
             fine_decrease_btn = ttk.Button(
-                btn_frame, text="-1°", command=lambda n=joint_name: self._update_angle(n, -1.0)
+                btn_frame, text="-1°", command=lambda n=joint_name: self._update_angle(n, -1.0)  # type: ignore
             )
             fine_decrease_btn.pack(side=tk.LEFT, padx=2)
 
             fine_increase_btn = ttk.Button(
-                btn_frame, text="+1°", command=lambda n=joint_name: self._update_angle(n, 1.0)
+                btn_frame, text="+1°", command=lambda n=joint_name: self._update_angle(n, 1.0)  # type: ignore
             )
             fine_increase_btn.pack(side=tk.LEFT, padx=2)
 
             increase_btn = ttk.Button(
                 btn_frame,
                 text="+5°",
-                command=lambda n=joint_name: self._update_angle(n, 5.0),
+                command=lambda n=joint_name: self._update_angle(n, 5.0),  # type: ignore
             )
             increase_btn.pack(side=tk.LEFT, padx=2)
 
@@ -95,7 +100,7 @@ class KeyboardActor(ActorRobot):
             f"{self.current_joint_angles[joint_name]:.1f}°"
         )
 
-    def _cycle_focus(self, event=None) -> None:
+    def _cycle_focus(self, event: Optional[tk.Event] = None) -> None:
         """Cycle keyboard focus through the joints."""
         focused = self.parent_frame.focus_get()
         for i, joint_name in enumerate(self.joint_names):
@@ -112,4 +117,4 @@ class KeyboardActor(ActorRobot):
         Returns:
             Dictionary mapping joint names to their current angles
         """
-        return self.current_joint_angles.copy()
+        return {name: Degree(angle) for name, angle in self.current_joint_angles.items()}

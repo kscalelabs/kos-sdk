@@ -16,7 +16,7 @@ async def test_connection(robot_ip: str = "") -> Dict[str, Any]:
             stderr=subprocess.DEVNULL,
             check=True,
         )
-        logger.success(f"Robot {robot_ip} is reachable via ping")
+        return {"success": True, "message": "Robot is reachable via ping"}
     except subprocess.CalledProcessError:
         result = {
             "success": False,

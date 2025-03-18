@@ -2,7 +2,8 @@ import asyncio
 from typing import Any, Dict, List, Optional, Tuple
 
 from loguru import logger
-from utils.robot import ID_TO_JOINT, RobotInterface
+
+from kos_sdk.utils.robot import ID_TO_JOINT, RobotInterface
 
 DEFAULT_MOVEMENT_DEGREES = 10.0
 DEFAULT_WAIT_TIME = 0.5
@@ -15,7 +16,7 @@ async def test_actuator_movement(
     """Test actuators and report which ones moved successfully."""
 
     async with RobotInterface(ip=robot_ip) as robot:
-        results = {"success": [], "failed": []}
+        results: Dict[str, List[Dict[str, Any]]] = {"success": [], "failed": []}
 
         try:
             await robot.configure_actuators()
@@ -74,16 +75,16 @@ async def test_single_actuator(
         logger.info(f"{name} {'moved successfully' if moved else 'did not move'}")
         return moved, None if moved else "Did not move"
 
-    except Exception as e:
-        logger.error(f"Error testing {name}: {e}")
+    except Exception as exc:
+        logger.error(f"Error testing {name}: {exc}")
         try:
             await robot.kos.actuator.configure_actuator(
                 actuator_id=actuator_id,
                 torque_enabled=False,
             )
-        except Exception as e:
-            logger.error(f"Error configuring actuator {actuator_id}: {e}")
-        return False, str(e)
+        except Exception as inner_exc:
+            logger.error(f"Error configuring actuator {actuator_id}: {inner_exc}")
+        return False, str(exc)
 
 
 def log_test_results(results: Dict[str, List]) -> None:

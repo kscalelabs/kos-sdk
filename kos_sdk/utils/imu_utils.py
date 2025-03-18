@@ -199,7 +199,7 @@ async def plot_imu_data(robot_ip: str = "", duration_seconds: int = 5) -> Dict[s
         ax_mag.grid(True)
         ax_mag.legend()
 
-        plt.tight_layout(rect=[0, 0, 1, 0.96])
+        plt.tight_layout(rect=(0, 0, 1, 0.96))
         plt.show()
 
         return {"success": True, "message": "IMU data plotted successfully", "results": results}

@@ -1,4 +1,5 @@
 import asyncio
+from typing import Any, Dict
 
 import pykos
 from loguru import logger
@@ -7,7 +8,7 @@ from PIL import Image
 GRID_SIZE = (32, 16)
 
 
-async def test_led(robot_ip="", blink_times=3, delay=0.5):
+async def test_led(robot_ip: str = "", blink_times: int = 3, delay: float = 0.5) -> Dict[str, Any]:
     logger.info("Starting LED test...")
 
     try:

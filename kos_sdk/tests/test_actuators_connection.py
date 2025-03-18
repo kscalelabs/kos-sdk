@@ -1,7 +1,8 @@
 from typing import Dict
 
 from loguru import logger
-from utils.robot import ID_TO_JOINT, JOINT_TO_ID, RobotInterface
+
+from kos_sdk.utils.robot import ID_TO_JOINT, JOINT_TO_ID, RobotInterface
 
 
 async def test_actuator_connection(robot_ip: str = "") -> Dict:

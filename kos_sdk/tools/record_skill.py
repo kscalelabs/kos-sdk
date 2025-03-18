@@ -10,8 +10,9 @@ from tkinter import ttk
 from typing import Dict, List, Union
 
 from loguru import logger
-from planners.keyboard_tk import KeyboardActor
-from unit_types import Degree
+
+from kos_sdk.tools.keyboard_tk import KeyboardActor
+from kos_sdk.utils.unit_types import Degree
 
 IS_MACOS = platform.system() == "Darwin"
 
@@ -36,10 +37,10 @@ class GUIProcess(Process):
         self.skill_name = skill_name
         self.command_queue = command_queue
         self.position_queue = position_queue
-        self.current_positions_queue = Queue()
+        self.current_positions_queue: Queue = Queue()
         self.daemon = True
 
-    def run(self):
+    def run(self) -> None:
         """Run the GUI in a separate process."""
         window = tk.Tk()
         window.title(f"Robot Control - Recording: {self.skill_name}")
@@ -94,7 +95,7 @@ class GUIProcess(Process):
         )
 
         # Add mousewheel scrolling
-        def _on_mousewheel(event):
+        def _on_mousewheel(event: tk.Event) -> None:
             canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
         canvas.bind_all("<MouseWheel>", _on_mousewheel)
@@ -123,7 +124,7 @@ class GUIProcess(Process):
             ttk.Button(
                 delays_frame,
                 text=f"{delay}s",
-                command=lambda d=delay: delay_var.set(str(d)),
+                command=lambda d=delay: delay_var.set(str(d)),  # type: ignore
             ).pack(side=tk.LEFT, padx=5)
 
         # Record button
@@ -147,7 +148,7 @@ class GUIProcess(Process):
         # Set up window close handler
         window.protocol("WM_DELETE_WINDOW", lambda: self.command_queue.put(("quit",)))
 
-        def check_commands():
+        def check_commands() -> None:
             try:
                 while True:
                     cmd = self.position_queue.get_nowait()
@@ -182,8 +183,8 @@ class RecordSkill:
         self.is_sim = False
 
         # Create queues for process communication
-        self.command_queue = Queue()
-        self.position_queue = Queue()
+        self.command_queue: Queue = Queue()
+        self.position_queue: Queue = Queue()
 
         # Start GUI process
         self.gui_process = GUIProcess(skill_name, self.command_queue, self.position_queue)
@@ -195,8 +196,9 @@ class RecordSkill:
 
     def update(self, feedback_state: Union[Dict[str, Union[int, Degree]], None]) -> None:
         """Process commands from GUI."""
-        self.last_positions = feedback_state
-        if feedback_state is None:
+        if feedback_state is not None:
+            self.last_positions = feedback_state
+        else:
             self.is_sim = True
         if self.recording:
             try:
@@ -218,11 +220,12 @@ class RecordSkill:
     def get_command_positions(self) -> Dict[str, Union[int, Degree]]:
         """Return the current joint positions."""
         if not self.is_sim:
-            return self.last_positions
+            return {name: Degree(pos) for name, pos in self.last_positions.items()}
         if self.recording:
             self.position_queue.put(("get_positions",))
             try:
-                return self.current_positions_queue.get(timeout=0.1)
+                positions = self.current_positions_queue.get(timeout=0.1)
+                return {name: Degree(pos) for name, pos in positions.items()}
             except queue.Empty:
                 logger.warning("Timeout getting positions from GUI")
                 return {}
@@ -258,7 +261,7 @@ class RecordSkill:
         except Exception as e:
             logger.error(f"Failed to save skill: {e}")
 
-    def __del__(self):
+    def __del__(self) -> None:
         """Save the skill when the recorder is destroyed."""
         if self.recording and self.frames:
             self.save()
