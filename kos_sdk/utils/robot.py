@@ -73,7 +73,7 @@ class RobotInterface:
                 kd=DEFAULT_KD,
                 torque_enabled=True,
             )
-            
+
     async def configure_actuators_record(self) -> None:
         logger.info("Enabling soft torque for actuator...")
         for actuator_id in JOINT_TO_ID.values():
