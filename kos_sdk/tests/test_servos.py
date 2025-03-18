@@ -1,17 +1,10 @@
 import asyncio
 from loguru import logger
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple
 from utils.robot import ID_TO_JOINT, RobotInterface
 
 DEFAULT_MOVEMENT_DEGREES = 10.0
 DEFAULT_WAIT_TIME = 0.5
-
-def create_result(success: bool, actuator_id: int, name: str, reason: str = None) -> Dict[str, Any]:
-    """Create a standardized result dictionary for actuator tests."""
-    result = {"success": success, "data": {"id": actuator_id, "name": name}}
-    if not success and reason:
-        result["data"]["reason"] = reason
-    return result
 
 async def test_actuator_movement(
     robot_ip: str = "", 
@@ -20,24 +13,24 @@ async def test_actuator_movement(
     """Test actuators and report which ones moved successfully."""
     
     async with RobotInterface(ip=robot_ip) as robot:
-        kos = robot.kos
         results = {"success": [], "failed": []}
         
         try:
             await robot.configure_actuators()
             
-            if actuator_id is not None:
-                # Test a single specific actuator
-                name = ID_TO_JOINT.get(actuator_id, f"Actuator {actuator_id}")
-                result = await test_single_actuator(kos, actuator_id, name)
-                results["success" if result["success"] else "failed"].append(result["data"])
-            else:
-                # Test all actuators
-                actuator_ids = list(ID_TO_JOINT.keys())
-                for act_id in actuator_ids:
-                    name = ID_TO_JOINT.get(act_id, f"Actuator {act_id}")
-                    result = await test_single_actuator(kos, act_id, name)
-                    results["success" if result["success"] else "failed"].append(result["data"])
+            actuator_ids = [actuator_id] if actuator_id is not None else list(ID_TO_JOINT.keys())
+            
+            for act_id in actuator_ids:
+                name = ID_TO_JOINT.get(act_id, f"Actuator {act_id}")
+                success, reason = await test_single_actuator(robot, act_id, name)
+                
+                result_data = {"id": act_id, "name": name}
+                if not success and reason:
+                    result_data["reason"] = reason
+                    
+                results["success" if success else "failed"].append(result_data)
+                
+                if len(actuator_ids) > 1:
                     await asyncio.sleep(0.5)
                 
         except Exception as e:
@@ -47,43 +40,47 @@ async def test_actuator_movement(
         log_test_results(results)
         return results
 
-async def test_single_actuator(kos, actuator_id: int, name: str) -> Dict[str, Any]:
+async def test_single_actuator(
+    robot: RobotInterface, 
+    actuator_id: int, 
+    name: str
+) -> Tuple[bool, Optional[str]]:
+    """Test a single actuator and return (success, reason)."""
     try:
-        state = await kos.actuator.get_actuators_state([actuator_id])
+        state = await robot.kos.actuator.get_actuators_state([actuator_id])
         if not state.states:
-            return create_result(False, actuator_id, name, "Could not get state")
+            return False, "Could not get state"
             
         current_position = state.states[0].position
-        
         target_position = current_position + DEFAULT_MOVEMENT_DEGREES
-        await kos.actuator.command_actuators(
-            [{"actuator_id": actuator_id, "position": target_position}])
+        
+        await robot.set_real_command_positions({name: target_position})
         await asyncio.sleep(DEFAULT_WAIT_TIME)
         
-        state = await kos.actuator.get_actuators_state([actuator_id])
+        state = await robot.kos.actuator.get_actuators_state([actuator_id])
         new_position = state.states[0].position
         moved = abs(new_position - current_position) > 1.0
         
-        await kos.actuator.command_actuators(
-            [{"actuator_id": actuator_id, "position": current_position}])
+        await robot.set_real_command_positions({name: current_position})
         await asyncio.sleep(DEFAULT_WAIT_TIME)
+        await robot.kos.actuator.configure_actuator(
+            actuator_id=actuator_id, 
+            torque_enabled=False
+        )
         
-        await kos.actuator.configure_actuator(actuator_id=actuator_id, torque_enabled=False)
-        
-        if moved:
-            logger.info(f"{name} moved successfully")
-            return create_result(True, actuator_id, name)
-        else:
-            logger.warning(f"{name} did not move")
-            return create_result(False, actuator_id, name, "Did not move")
+        logger.info(f"{name} {'moved successfully' if moved else 'did not move'}")
+        return moved, None if moved else "Did not move"
             
     except Exception as e:
         logger.error(f"Error testing {name}: {e}")
         try:
-            await kos.actuator.configure_actuator(actuator_id=actuator_id, torque_enabled=False)
+            await robot.kos.actuator.configure_actuator(
+                actuator_id=actuator_id, 
+                torque_enabled=False
+            )
         except:
             pass
-        return create_result(False, actuator_id, name, str(e))
+        return False, str(e)
 
 def log_test_results(results: Dict[str, List]) -> None:
     logger.info("\n=== Actuator Test Results ===")
@@ -100,6 +97,6 @@ def test_servo_sync(
     actuator_id: Optional[int] = None
 ) -> Dict[str, Any]:
     """Synchronous wrapper for test_actuator_movement."""
-    return asyncio.run(test_actuator_movement(robot_ip))
+    return asyncio.run(test_actuator_movement(robot_ip, actuator_id))
 
 __all__ = ["test_servo_sync"]
