@@ -34,6 +34,9 @@ JOINT_TO_ID = {
 
 ID_TO_JOINT = {v: k for k, v in JOINT_TO_ID.items()}
 
+DEFAULT_KP = 32
+DEFAULT_KD = 32
+
 
 class RobotInterface:
     def __init__(self, ip: str) -> None:
@@ -64,15 +67,13 @@ class RobotInterface:
 
     async def configure_actuators(self) -> None:
         for actuator_id in JOINT_TO_ID.values():
-            logger.info("Enabling torque for actuator...")
             await self.kos.actuator.configure_actuator(
                 actuator_id=actuator_id,
-                kp=32,
-                kd=32,
+                kp=DEFAULT_KP,
+                kd=DEFAULT_KD,
                 torque_enabled=True,
             )
-            logger.success(f"Successfully enabled torque for actuator {actuator_id}")
-
+            
     async def configure_actuators_record(self) -> None:
         logger.info("Enabling soft torque for actuator...")
         for actuator_id in JOINT_TO_ID.values():
