@@ -136,7 +136,7 @@ async def main() -> None:
         async with pykos.KOS("192.168.42.1") as kos:
             await reinforcement_learning_test(kos)
     except Exception:
-        logger.exception("Make sure that the Z-Bot is connected over USB and the IP address is accessible.")
+        logger.exception("Ensure the Z-Bot is connected over USB and the IP address is accessible.")
         raise
 
 

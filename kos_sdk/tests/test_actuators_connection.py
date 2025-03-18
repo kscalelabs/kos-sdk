@@ -30,7 +30,9 @@ async def test_actuator_connection(robot_ip: str = "") -> Dict:
                 "responding_ids": sorted(list(responding_ids)),
                 "missing_ids": sorted(list(missing_ids)),
                 "missing_joints": (
-                    sorted([ID_TO_JOINT.get(id, f"Unknown-{id}") for id in missing_ids]) if missing_ids else []
+                    sorted([ID_TO_JOINT.get(id, f"Unknown-{id}") for id in missing_ids])
+                    if missing_ids
+                    else []
                 ),
             }
 
