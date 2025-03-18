@@ -91,9 +91,7 @@ class KeyboardActor(ActorRobot):
             delta: Amount to change the angle by (in degrees)
         """
         self.current_joint_angles[joint_name] += delta
-        self.joint_controls[joint_name]["value_var"].set(
-            f"{self.current_joint_angles[joint_name]:.1f}°"
-        )
+        self.joint_controls[joint_name]["value_var"].set(f"{self.current_joint_angles[joint_name]:.1f}°")
 
     def _cycle_focus(self, event=None) -> None:
         """Cycle keyboard focus through the joints."""

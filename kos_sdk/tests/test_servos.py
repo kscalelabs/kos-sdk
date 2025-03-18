@@ -94,9 +94,7 @@ def log_test_results(results: Dict[str, List]) -> None:
 
     logger.info(f"\nFailed to move ({len(results['failed'])}):")
     for actuator in results["failed"]:
-        logger.info(
-            f"  - {actuator['name']} (ID: {actuator['id']}): {actuator.get('reason', 'Unknown')}"
-        )
+        logger.info(f"  - {actuator['name']} (ID: {actuator['id']}): {actuator.get('reason', 'Unknown')}")
 
 
 def test_servo_sync(robot_ip: str = "", actuator_id: Optional[int] = None) -> Dict[str, Any]:
