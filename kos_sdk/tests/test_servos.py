@@ -95,8 +95,7 @@ def log_test_results(results: Dict[str, List]) -> None:
     logger.info(f"\nFailed to move ({len(results['failed'])}):")
     for actuator in results["failed"]:
         logger.info(
-            f"  - {actuator['name']} (ID: {actuator['id']}): "
-            f"{actuator.get('reason', 'Unknown')}"
+            f"  - {actuator['name']} (ID: {actuator['id']}): {actuator.get('reason', 'Unknown')}"
         )
 
 
