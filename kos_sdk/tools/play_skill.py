@@ -5,7 +5,8 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional, Union
 
 from loguru import logger
-from unit_types import Degree
+
+from kos_sdk.utils.unit_types import Degree
 
 
 @dataclass
@@ -52,7 +53,10 @@ class PlaySkill:
             with open(filepath, "r") as f:
                 data = json.load(f)
                 frames = [
-                    Frame(joint_positions=frame["joint_positions"], delay=frame["delay"])
+                    Frame(
+                        joint_positions=frame["joint_positions"],
+                        delay=frame["delay"],
+                    )
                     for frame in data["frames"]
                 ]
                 self.skill_data = SkillData(name=data["name"], frames=frames)
@@ -93,7 +97,8 @@ class PlaySkill:
             for joint in current_frame.joint_positions:
                 current_pos = current_frame.joint_positions[joint]
                 next_pos = next_frame.joint_positions[joint]
-                self.current_positions[joint] = current_pos + (next_pos - current_pos) * t
+                interpolated_value = current_pos + (next_pos - current_pos) * t
+                self.current_positions[joint] = Degree(interpolated_value)
 
     def get_command_positions(self) -> Dict[str, Union[int, Degree]]:
         """Get the interpolated joint positions.

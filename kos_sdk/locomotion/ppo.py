@@ -1,6 +1,7 @@
 """Runs reinforcement learning unit tests.
 
-To see a video of the policy running in simulation, look in `assets/model_checkpoints/zbot_rl_policy/policy.mp4`.
+To see a video of the policy running in simulation, look in
+`assets/model_checkpoints/zbot_rl_policy/policy.mp4`.
 
 To see the input actuator positions and output policy actions for each timestep,
 uncomment the `logger.setLevel(logging.DEBUG)` line.
@@ -11,11 +12,13 @@ import logging
 import math
 import os
 import time
+from typing import cast
 
 import colorlogging
 import numpy as np
 import onnxruntime as ort
 import pykos
+from numpy.typing import NDArray
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +85,9 @@ def load_policy(checkpoint_dir: str) -> ort.InferenceSession:
     return ort.InferenceSession(policy_path)
 
 
-def create_policy_input(positions: dict[int, float], prev_actions: np.ndarray) -> np.ndarray:
+def create_policy_input(
+    positions: dict[int, float], prev_actions: np.ndarray
+) -> NDArray[np.float32]:
     """Create observation vector for policy from current state."""
     joint_angles = np.zeros(18, dtype=np.float32)
 
@@ -101,10 +106,14 @@ def create_policy_input(positions: dict[int, float], prev_actions: np.ndarray) -
         ],
     ).astype(np.float32)
 
-    return obs
+    return cast(NDArray[np.float32], obs.astype(np.float32))
 
 
-def print_state_and_actions(count: int, positions: dict[int, float], actions: np.ndarray) -> None:
+def print_state_and_actions(
+    count: int,
+    positions: dict[int, float],
+    actions: np.ndarray,
+) -> None:
     """Print current joint positions and policy actions."""
     logger.debug("=== Current State and Actions ===")
 
@@ -131,7 +140,7 @@ async def main() -> None:
         async with pykos.KOS("192.168.42.1") as kos:
             await reinforcement_learning_test(kos)
     except Exception:
-        logger.exception("Make sure that the Z-Bot is connected over USB and the IP address is accessible.")
+        logger.exception("Ensure the Z-Bot is connected over USB and the IP address is accessible.")
         raise
 
 

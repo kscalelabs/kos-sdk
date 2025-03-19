@@ -2,10 +2,11 @@
 
 import tkinter as tk
 from tkinter import ttk
-from typing import Dict, Union
+from typing import Callable, Dict, Optional, Union
 
 from ks_digital_twin.actor.base import ActorRobot
-from unit_types import Degree
+
+from kos_sdk.utils.unit_types import Degree
 
 
 class KeyboardActor(ActorRobot):
@@ -46,22 +47,26 @@ class KeyboardActor(ActorRobot):
             btn_frame.pack(side=tk.RIGHT)
 
             decrease_btn = ttk.Button(
-                btn_frame, text="-5°", command=lambda n=joint_name: self._update_angle(n, -5.0)
+                btn_frame,
+                text="-5°",
+                command=self.make_update_callback(joint_name, -5.0),
             )
             decrease_btn.pack(side=tk.LEFT, padx=2)
 
             fine_decrease_btn = ttk.Button(
-                btn_frame, text="-1°", command=lambda n=joint_name: self._update_angle(n, -1.0)
+                btn_frame, text="-1°", command=self.make_update_callback(joint_name, -1.0)
             )
             fine_decrease_btn.pack(side=tk.LEFT, padx=2)
 
             fine_increase_btn = ttk.Button(
-                btn_frame, text="+1°", command=lambda n=joint_name: self._update_angle(n, 1.0)
+                btn_frame, text="+1°", command=self.make_update_callback(joint_name, 1.0)
             )
             fine_increase_btn.pack(side=tk.LEFT, padx=2)
 
             increase_btn = ttk.Button(
-                btn_frame, text="+5°", command=lambda n=joint_name: self._update_angle(n, 5.0)
+                btn_frame,
+                text="+5°",
+                command=self.make_update_callback(joint_name, 5.0),
             )
             increase_btn.pack(side=tk.LEFT, padx=2)
 
@@ -79,6 +84,22 @@ class KeyboardActor(ActorRobot):
         parent_frame.bind("<Down>", lambda e: self._update_angle(self.joint_names[0], -5.0))
         parent_frame.bind("<Tab>", self._cycle_focus)
 
+    def make_update_callback(self, joint_name: str, delta: float) -> Callable[[], None]:
+        """Create a callback function for updating a joint angle.
+
+        Args:
+            joint_name: Name of the joint to update
+            delta: Amount to change the angle by
+
+        Returns:
+            Callback function for the button
+        """
+
+        def callback() -> None:
+            self._update_angle(joint_name, delta)
+
+        return callback
+
     def _update_angle(self, joint_name: str, delta: float) -> None:
         """Update the angle of the specified joint.
 
@@ -91,7 +112,7 @@ class KeyboardActor(ActorRobot):
             f"{self.current_joint_angles[joint_name]:.1f}°"
         )
 
-    def _cycle_focus(self, event=None) -> None:
+    def _cycle_focus(self, event: Optional[tk.Event] = None) -> None:
         """Cycle keyboard focus through the joints."""
         focused = self.parent_frame.focus_get()
         for i, joint_name in enumerate(self.joint_names):
@@ -108,4 +129,4 @@ class KeyboardActor(ActorRobot):
         Returns:
             Dictionary mapping joint names to their current angles
         """
-        return self.current_joint_angles.copy()
+        return {name: Degree(angle) for name, angle in self.current_joint_angles.items()}
