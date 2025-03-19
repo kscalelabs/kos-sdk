@@ -36,6 +36,7 @@ module = [
     "pytest.*",
     "_pytest.*",
     "pykos.*",
+    "colorlogging.*",
     "onnxruntime.*"
 ]
 
