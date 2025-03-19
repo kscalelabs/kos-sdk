@@ -16,17 +16,12 @@ class ImuTestResults:
     avg_rate: float
     total_samples: int
     duration: float
-    timestamps: List[float]
-    samples_per_second: List[int]
     accel_x: List[float]
     accel_y: List[float]
     accel_z: List[float]
     gyro_x: List[float]
     gyro_y: List[float]
     gyro_z: List[float]
-    mag_x: List[float]
-    mag_y: List[float]
-    mag_z: List[float]
 
 
 async def collect_data(robot_ip: str = "", duration_seconds: int = 5) -> Dict[str, Any]:
@@ -40,20 +35,13 @@ async def collect_data(robot_ip: str = "", duration_seconds: int = 5) -> Dict[st
             start_time = time.time()
             end_time = start_time + duration_seconds
 
-            timestamps = []
-            samples_per_second = []
             accel_x, accel_y, accel_z = [], [], []
             gyro_x, gyro_y, gyro_z = [], [], []
-            mag_x, mag_y, mag_z = [], [], []
-
-            last_second = int(start_time)
-            second_count = 0
 
             # Collect data
             while time.time() < end_time:
                 imu_values = await robot.kos.imu.get_imu_values()
                 count += 1
-                second_count += 1
 
                 accel_x.append(imu_values.accel_x)
                 accel_y.append(imu_values.accel_y)
@@ -61,21 +49,6 @@ async def collect_data(robot_ip: str = "", duration_seconds: int = 5) -> Dict[st
                 gyro_x.append(imu_values.gyro_x)
                 gyro_y.append(imu_values.gyro_y)
                 gyro_z.append(imu_values.gyro_z)
-                mag_x_val = imu_values.mag_x if imu_values.mag_x is not None else 0.0
-                mag_y_val = imu_values.mag_y if imu_values.mag_y is not None else 0.0
-                mag_z_val = imu_values.mag_z if imu_values.mag_z is not None else 0.0
-                mag_x.append(mag_x_val)
-                mag_y.append(mag_y_val)
-                mag_z.append(mag_z_val)
-
-                current_second = int(time.time())
-                if current_second != last_second:
-                    timestamps.append(current_second - start_time)
-                    samples_per_second.append(second_count)
-                    time_str = f"Time: {current_second - start_time:.2f}s"
-                    logger.info(f"{time_str} - Samples: {second_count}")
-                    second_count = 0
-                    last_second = current_second
 
             # Calculate results
             elapsed_time = time.time() - start_time
@@ -89,17 +62,12 @@ async def collect_data(robot_ip: str = "", duration_seconds: int = 5) -> Dict[st
                 avg_rate=avg_rate,
                 total_samples=count,
                 duration=elapsed_time,
-                timestamps=timestamps,
-                samples_per_second=samples_per_second,
                 accel_x=accel_x,
                 accel_y=accel_y,
                 accel_z=accel_z,
                 gyro_x=gyro_x,
                 gyro_y=gyro_y,
                 gyro_z=gyro_z,
-                mag_x=mag_x,
-                mag_y=mag_y,
-                mag_z=mag_z,
             )
 
             # Calculate statistics
@@ -149,23 +117,8 @@ async def plot_imu_data(robot_ip: str = "", duration_seconds: int = 5) -> Dict[s
         times = np.linspace(0, results.duration, len(results.accel_x))
 
         # Create plots
-        fig, axs = plt.subplots(2, 2, figsize=(12, 10))
+        fig, (ax_accel, ax_gyro) = plt.subplots(1, 2, figsize=(12, 5))
         fig.suptitle("IMU Sensor Data Analysis", fontsize=16)
-        ax_rate, ax_accel, ax_gyro, ax_mag = axs.flatten()
-
-        # Plot sampling rate
-        ax_rate.plot(
-            results.timestamps[1:],
-            results.samples_per_second[1:],
-            marker="o",
-            linestyle="-",
-            label="Samples/second",
-        )
-        ax_rate.set_xlabel("Time (seconds)")
-        ax_rate.set_ylabel("Samples per Second")
-        ax_rate.set_title("IMU Sampling Rate")
-        ax_rate.grid(True)
-        ax_rate.legend()
 
         # Plot acceleration
         ax_accel.plot(times, results.accel_x, label="X")
@@ -186,16 +139,6 @@ async def plot_imu_data(robot_ip: str = "", duration_seconds: int = 5) -> Dict[s
         ax_gyro.set_title("Gyroscope")
         ax_gyro.grid(True)
         ax_gyro.legend()
-
-        # Plot magnetometer
-        ax_mag.plot(times, results.mag_x, label="X")
-        ax_mag.plot(times, results.mag_y, label="Y")
-        ax_mag.plot(times, results.mag_z, label="Z")
-        ax_mag.set_xlabel("Time (seconds)")
-        ax_mag.set_ylabel("Mag (units)")
-        ax_mag.set_title("Magnetometer")
-        ax_mag.grid(True)
-        ax_mag.legend()
 
         plt.tight_layout(rect=(0, 0, 1, 0.96))
         plt.show()
