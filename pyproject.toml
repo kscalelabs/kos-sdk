@@ -37,7 +37,8 @@ module = [
     "_pytest.*",
     "pykos.*",
     "colorlogging.*",
-    "onnxruntime.*"
+    "onnxruntime.*",
+    "ks_digital_twin.*",
 ]
 
 ignore_missing_imports = true
