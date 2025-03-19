@@ -28,6 +28,3 @@ async def test_led(robot_ip: str = "", blink_times: int = 3, delay: float = 0.5)
     except Exception as e:
         logger.error(f"LED test failed: {e}")
         return {"success": False, "message": str(e)}
-
-
-__all__ = ["test_led"]

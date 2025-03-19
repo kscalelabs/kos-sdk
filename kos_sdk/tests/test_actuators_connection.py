@@ -40,6 +40,3 @@ async def test_actuator_connection(robot_ip: str = "") -> Dict:
         except Exception as e:
             logger.error(f"Failed to get actuator feedback: {e}")
             return {"success": False, "error": str(e)}
-
-
-__all__ = ["test_actuator_connection"]

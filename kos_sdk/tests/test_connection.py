@@ -1,4 +1,3 @@
-import asyncio
 import subprocess
 from typing import Any, Dict
 
@@ -25,11 +24,3 @@ async def test_connection(robot_ip: str = "") -> Dict[str, Any]:
         }
         logger.error(f"Connection test failed: {result['message']}")
         return result
-
-
-def test_connection_sync(robot_ip: str = "") -> Dict[str, Any]:
-    """Synchronous wrapper for test_connection."""
-    return asyncio.run(test_connection(robot_ip))
-
-
-__all__ = ["test_connection_sync"]

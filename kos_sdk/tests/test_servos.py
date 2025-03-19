@@ -98,11 +98,3 @@ def log_test_results(results: Dict[str, List]) -> None:
         logger.info(
             f"  - {actuator['name']} (ID: {actuator['id']}): {actuator.get('reason', 'Unknown')}"
         )
-
-
-def test_servo_sync(robot_ip: str = "", actuator_id: Optional[int] = None) -> Dict[str, Any]:
-    """Synchronous wrapper for test_actuator_movement."""
-    return asyncio.run(test_actuator_movement(robot_ip, actuator_id))
-
-
-__all__ = ["test_servo_sync"]
