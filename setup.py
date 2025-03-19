@@ -4,7 +4,7 @@
 
 import re
 
-from setuptools import find_packages, setup
+from setuptools import setup, find_packages
 
 with open("README.md", "r", encoding="utf-8") as f:
     long_description: str = f.read()
@@ -21,20 +21,15 @@ assert version_re is not None, "Could not find version in kos_sdk/__init__.py"
 version: str = version_re.group(1)
 
 setup(
-    name="kos_sdk",
-    version="0.1.0",
+    name="kos-sdk",
+    version=version,
     description="Software Development Kit for KOS",
     author="Jingxiang Mo",
     url="https://github.com/kscalelabs/kos-sdk",
     long_description=long_description,
     long_description_content_type="text/markdown",
     python_requires=">=3.11",
-    install_requires=[
-        "pykos",
-        "loguru",
-        "matplotlib",
-        "pandas",
-    ],
+    install_requires=requirements,
     extras_require={"dev": requirements_dev},
     packages=find_packages(),
     include_package_data=True,
