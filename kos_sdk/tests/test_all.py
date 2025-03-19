@@ -21,11 +21,7 @@ async def main() -> None:
     for test_name, test_func, args in test_functions:
         logger.info(f"Running {test_name}...")
         try:
-            if asyncio.iscoroutinefunction(test_func):
-                result = await test_func(*args)
-            else:
-                result = test_func(*args)
-
+            result = await test_func(*args)
             # Check if the test returned a dictionary with a success field
             if isinstance(result, dict) and "success" in result and not result["success"]:
                 logger.error(f"{test_name} failed: {result.get('error', 'Unknown error')}")
