@@ -10,7 +10,9 @@ from kos_sdk.utils.unit_types import Degree
 # Create a simple base class if you don't need the actual implementation
 class ActorRobot:
     """Base class for actor robots."""
+
     pass
+
 
 class KeyboardActor(ActorRobot):
     """Actor robot model that allows for keyboard control."""

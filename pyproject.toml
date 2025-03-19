@@ -1,6 +1,6 @@
 [tool.black]
 
-line-length = 120
+line-length = 100
 target-version = ["py311"]
 include = '\.pyi?$'
 
@@ -33,7 +33,10 @@ namespace_packages = false
 [[tool.mypy.overrides]]
 
 module = [
-    "onnxruntime.*",
+    "pytest.*",
+    "_pytest.*",
+    "pykos.*",
+    "onnxruntime.*"
 ]
 
 ignore_missing_imports = true

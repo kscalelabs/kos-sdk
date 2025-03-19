@@ -14,7 +14,7 @@ import os
 import time
 from typing import cast
 
-import colorlogging  # type: ignore
+import colorlogging
 import numpy as np
 import onnxruntime as ort
 import pykos
@@ -86,8 +86,7 @@ def load_policy(checkpoint_dir: str) -> ort.InferenceSession:
 
 
 def create_policy_input(
-    positions: dict[int, float], 
-    prev_actions: np.ndarray
+    positions: dict[int, float], prev_actions: np.ndarray
 ) -> NDArray[np.float32]:
     """Create observation vector for policy from current state."""
     joint_angles = np.zeros(18, dtype=np.float32)

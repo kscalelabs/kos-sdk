@@ -67,7 +67,7 @@ class TelemetryLogger:
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 
         # Open log files and initialize CSV writers
-        
+
         self.imu_file = open(self.log_dir / f"imu_{timestamp}.csv", "w", newline="")
         self.actuator_file = open(self.log_dir / f"actuator_{timestamp}.csv", "w", newline="")
         self.control_file = open(self.log_dir / f"control_{timestamp}.csv", "w", newline="")
@@ -76,23 +76,23 @@ class TelemetryLogger:
         if self.imu_file:
             self.imu_writer = csv.writer(self.imu_file)
             self.imu_writer.writerow(
-            [
-                "timestamp",
-                "roll",
-                "pitch",
-                "yaw",  # Orientation (Euler angles)
-                "accel_x",
-                "accel_y",
-                "accel_z",  # Linear acceleration
-                "gyro_x",
-                "gyro_y",
-                "gyro_z",  # Angular velocity
-                "quat_w",
-                "quat_x",
-                "quat_y",
-                "quat_z",  # Quaternion
-            ]
-        )
+                [
+                    "timestamp",
+                    "roll",
+                    "pitch",
+                    "yaw",  # Orientation (Euler angles)
+                    "accel_x",
+                    "accel_y",
+                    "accel_z",  # Linear acceleration
+                    "gyro_x",
+                    "gyro_y",
+                    "gyro_z",  # Angular velocity
+                    "quat_w",
+                    "quat_x",
+                    "quat_y",
+                    "quat_z",  # Quaternion
+                ]
+            )
 
         if self.actuator_file:
             self.actuator_writer = csv.writer(self.actuator_file)
@@ -168,16 +168,16 @@ class TelemetryLogger:
                         imu_euler.yaw,
                         imu_values.accel_x,
                         imu_values.accel_y,
-                    imu_values.accel_z,
-                    imu_values.gyro_x,
-                    imu_values.gyro_y,
-                    imu_values.gyro_z,
-                    quat.w,
-                    quat.x,
-                    quat.y,
-                    quat.z,
-                ]
-            )
+                        imu_values.accel_z,
+                        imu_values.gyro_x,
+                        imu_values.gyro_y,
+                        imu_values.gyro_z,
+                        quat.w,
+                        quat.x,
+                        quat.y,
+                        quat.z,
+                    ]
+                )
         except Exception as e:
             logger.warning(f"Failed to get IMU data: {e}")
 
@@ -196,13 +196,13 @@ class TelemetryLogger:
                             state.position,
                             state.velocity,
                             state.torque,
-                        state.current,
-                        state.temperature,
-                        state.voltage,
-                        state.online,
-                        ",".join(state.faults) if state.faults else "",
-                    ]
-                )
+                            state.current,
+                            state.temperature,
+                            state.voltage,
+                            state.online,
+                            ",".join(state.faults) if state.faults else "",
+                        ]
+                    )
         except Exception as e:
             logger.warning(f"Failed to get actuator data: {e}")
 
@@ -224,8 +224,8 @@ class TelemetryLogger:
                     avg_frequency,
                     cmd_latency,
                     cmd_latency,
-            ]  # Using command latency as proxy for gRPC latency
-        )
+                ]  # Using command latency as proxy for gRPC latency
+            )
 
 
 def plot_latest_logs(log_dir: str = "telemetry_logs") -> None:
@@ -315,7 +315,8 @@ def plot_control_metrics(fig: plt.Figure, gs: GridSpec, control_data: pd.DataFra
     ax_control.plot(control_data["time"], control_data["loop_frequency"], label="Loop Frequency")
     ax_control2 = ax_control.twinx()
     ax_control2.plot(
-        control_data["time"], control_data["command_latency"] * 1000, "r-", label="Command Latency")
+        control_data["time"], control_data["command_latency"] * 1000, "r-", label="Command Latency"
+    )
     ax_control.set_title("Control Performance Metrics")
     ax_control.set_xlabel("Time (s)")
     ax_control.set_ylabel("Frequency (Hz)")

@@ -87,15 +87,17 @@ class RobotInterface:
     async def homing_actuators(self) -> None:
         for actuator_id in JOINT_TO_ID.values():
             logger.info(f"Setting actuator {actuator_id} to 0 position")
-            await self.kos.actuator.command_actuators([
-                {"actuator_id": actuator_id, "position": 0, "velocity": 0.0, "torque": 0.0}
-            ])
+            await self.kos.actuator.command_actuators(
+                [{"actuator_id": actuator_id, "position": 0, "velocity": 0.0, "torque": 0.0}]
+            )
             logger.success(f"Successfully set actuator {actuator_id} to 0 position")
 
     async def set_real_command_positions(self, positions: Dict[str, Union[int, Degree]]) -> None:
         await self.kos.actuator.command_actuators(
-            [{"actuator_id": JOINT_TO_ID[name], "position": pos, "velocity": 0.0, "torque": 0.0} 
-             for name, pos in positions.items()]
+            [
+                {"actuator_id": JOINT_TO_ID[name], "position": pos, "velocity": 0.0, "torque": 0.0}
+                for name, pos in positions.items()
+            ]
         )
 
     async def get_feedback_state(self) -> Any:

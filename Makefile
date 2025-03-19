@@ -49,7 +49,7 @@ format:
 .PHONY: format
 
 static-checks:
-	##@black --diff --check $(py-files)
+	@black --diff --check $(py-files)
 	@ruff check $(py-files)
 	@mypy --install-types --non-interactive $(py-files)
 .PHONY: lint
