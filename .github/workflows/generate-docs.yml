@@ -14,34 +14,34 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-          
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -e .
           pip install pdoc black
-          
+
       - name: Generate documentation
         run: |
-          pdoc --html --output-dir ./docs kos_sdk
-          
+          pdoc --output-dir ./docs kos_sdk
+
       - name: Checkout api-docs repository
         uses: actions/checkout@v4
         with:
           repository: kscale/api-docs
           path: api-docs
           token: ${{ secrets.REPO_ACCESS_TOKEN }}
-          
+
       - name: Copy documentation to api-docs
         run: |
           mkdir -p api-docs/kos-sdk
           cp -r docs/kos_sdk/* api-docs/kos-sdk/
-          
+
       - name: Commit changes to api-docs
         run: |
           cd api-docs
