@@ -24,11 +24,11 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e .
-          pip install pdoc black
+          pip install pdoc3 black
 
       - name: Generate documentation
         run: |
-          pdoc --output-dir ./docs kos_sdk
+          pdoc --html --output-dir ./docs kos_sdk
 
       - name: Checkout api-docs repository
         uses: actions/checkout@v4
