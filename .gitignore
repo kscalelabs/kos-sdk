@@ -33,6 +33,7 @@ build/
 # Build artifacts
 *.so
 out*/
+kos_sdk.egg-info/
 
 # System
 .DS_Store
