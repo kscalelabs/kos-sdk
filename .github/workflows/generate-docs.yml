@@ -24,11 +24,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e .
-          pip install pdoc3 black
+          pip install pdoc black loguru ks_digital_twin
 
       - name: Generate documentation
         run: |
-          pdoc --html --output-dir ./docs kos_sdk
+          export PATH=$pythonLocation/bin:$PATH
+          pdoc --output-dir ./docs kos_sdk
 
       - name: Checkout api-docs repository
         uses: actions/checkout@v4
