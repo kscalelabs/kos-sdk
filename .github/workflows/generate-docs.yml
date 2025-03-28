@@ -55,11 +55,15 @@ jobs:
           mkdir -p api-docs/kos-sdk
           cp -r docs/kos_sdk/* api-docs/kos-sdk/
 
-      - name: Commit changes to api-docs
+      - name: Create PR for api-docs
         run: |
           cd api-docs
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
+          git checkout -b update-docs-${{ github.sha }}
           git add .
           git commit -m "Update demos documentation from ${{ github.sha }}" || echo "No changes to commit"
-          git push
+          git push -u origin update-docs-${{ github.sha }}
+          gh pr create --title "Update documentation" --body "Auto-generated documentation update from commit ${{ github.sha }}"
+        env:
+          GH_TOKEN: ${{ secrets.API_DOCS_TOKEN }}
