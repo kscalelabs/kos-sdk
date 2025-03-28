@@ -1,5 +1,4 @@
 name: Generate Documentation
-
 on:
   push:
     branches:
@@ -11,7 +10,7 @@ jobs:
   build-docs:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout source repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -32,45 +31,60 @@ jobs:
           export PATH=$pythonLocation/bin:$PATH
           pdoc --output-dir ./docs kos_sdk
 
-      - name: Checkout api-docs repository
+      - name: Setup GitHub CLI
+        run: |
+          gh auth setup-git
+          gh auth status
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create fork if doesn't exist
+        id: check-fork
+        run: |
+          FORK_EXISTS=$(gh repo list --fork | grep kscalelabs/api-docs || echo "")
+          if [ -z "$FORK_EXISTS" ]; then
+            echo "Creating fork of kscalelabs/api-docs"
+            gh repo fork kscalelabs/api-docs --clone=false
+          else
+            echo "Fork already exists"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Checkout fork
         uses: actions/checkout@v4
         with:
-          repository: kscalelabs/api-docs
-          path: api-docs
-          token: ${{ secrets.API_DOCS_TOKEN }}
-          ssh-strict: true
-          ssh-user: git
-          persist-credentials: true
-          clean: true
-          sparse-checkout-cone-mode: true
-          fetch-depth: 1
-          fetch-tags: false
-          show-progress: true
-          lfs: false
-          submodules: false
-          set-safe-directory: true
+          repository: ${{ github.repository_owner }}/api-docs
+          path: api-docs-fork
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Copy documentation to api-docs
+      - name: Copy documentation to fork
         run: |
-          mkdir -p api-docs/kos-sdk
-          cp -r docs/kos_sdk/* api-docs/kos-sdk/
+          mkdir -p api-docs-fork/kos-sdk
+          cp -r docs/kos_sdk/* api-docs-fork/kos-sdk/
 
-      - name: Create PR for api-docs
+      - name: Create PR from fork
         run: |
-          cd api-docs
-          git config user.name "GitHub Actions Bot"
+          cd api-docs-fork
+          git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git checkout -b update-docs-${{ github.sha }}
+
+          # Create a new branch
+          BRANCH_NAME="update-docs-${{ github.sha }}"
+          git checkout -b $BRANCH_NAME
+
+          # Add and commit changes
           git add .
-          git commit -m "Update demos documentation from ${{ github.sha }}" || echo "No changes to commit"
-          
-          # Set Git credentials explicitly instead of in the URL
-          git config --global credential.helper store
-          echo "https://oauth2:${{ secrets.API_DOCS_TOKEN }}@github.com" > ~/.git-credentials
-          git remote set-url origin "https://oauth2:${{ secrets.API_DOCS_TOKEN }}@github.com/kscalelabs/api-docs.git"
-          git push -u origin update-docs-${{ github.sha }}
-          
-          # Create PR using the GitHub CLI with the same token
-          gh pr create --title "Update documentation" --body "Auto-generated documentation update from commit ${{ github.sha }}"
+          git commit -m "Update documentation from ${{ github.sha }}" || { echo "No changes to commit"; exit 0; }
+
+          # Push to fork
+          git push -u origin $BRANCH_NAME
+
+          # Create PR from fork to original repo
+          gh pr create \
+            --repo kscalelabs/api-docs \
+            --title "Update documentation" \
+            --body "Auto-generated documentation update from commit ${{ github.sha }}" \
+            --head ${{ github.repository_owner }}:$BRANCH_NAME
         env:
-          GH_TOKEN: ${{ secrets.API_DOCS_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
