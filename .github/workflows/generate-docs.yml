@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - chore/autodoc-workflow
   workflow_dispatch:
 
 jobs:
@@ -34,9 +35,20 @@ jobs:
       - name: Checkout api-docs repository
         uses: actions/checkout@v4
         with:
-          repository: kscale/api-docs
+          repository: kscalelabs/api-docs
           path: api-docs
-          token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          token: ${{ secrets.API_DOCS_TOKEN }}
+          ssh-strict: true
+          ssh-user: git
+          persist-credentials: true
+          clean: true
+          sparse-checkout-cone-mode: true
+          fetch-depth: 1
+          fetch-tags: false
+          show-progress: true
+          lfs: false
+          submodules: false
+          set-safe-directory: true
 
       - name: Copy documentation to api-docs
         run: |
