@@ -1,53 +1,59 @@
 name: Generate Documentation
-
 on:
   push:
     branches:
       - master
+      - chore/autodoc-workflow
   workflow_dispatch:
-
 jobs:
   build-docs:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout source repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -e .
           pip install pdoc black loguru ks_digital_twin
-
       - name: Generate documentation
         run: |
           export PATH=$pythonLocation/bin:$PATH
           pdoc --output-dir ./docs kos_sdk
-
+      - name: Setup GitHub CLI
+        run: |
+          gh auth setup-git
+          gh auth status
+        env:
+          GH_TOKEN: ${{ secrets.API_DOCS_TOKEN }}
       - name: Checkout api-docs repository
         uses: actions/checkout@v4
         with:
-          repository: kscale/api-docs
+          repository: kscalelabs/api-docs
           path: api-docs
-          token: ${{ secrets.REPO_ACCESS_TOKEN }}
-
+          token: ${{ secrets.API_DOCS_TOKEN }}
       - name: Copy documentation to api-docs
         run: |
           mkdir -p api-docs/kos-sdk
           cp -r docs/kos_sdk/* api-docs/kos-sdk/
-
-      - name: Commit changes to api-docs
+      - name: Push changes to api-docs master branch
         run: |
           cd api-docs
-          git config user.name "GitHub Actions Bot"
+          git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
+
+          # Add and commit changes
           git add .
-          git commit -m "Update demos documentation from ${{ github.sha }}" || echo "No changes to commit"
-          git push
+          git commit -m "Update documentation from ${{ github.sha }}" || { echo "No changes to commit"; exit 0; }
+
+          # Push directly to master branch with token authentication
+          git remote set-url origin "https://x-access-token:${{ secrets.API_DOCS_TOKEN }}@github.com/kscalelabs/api-docs.git"
+          git push origin master
+        env:
+          GH_TOKEN: ${{ secrets.API_DOCS_TOKEN }}
