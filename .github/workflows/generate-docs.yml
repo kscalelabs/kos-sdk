@@ -63,6 +63,7 @@ jobs:
           git checkout -b update-docs-${{ github.sha }}
           git add .
           git commit -m "Update demos documentation from ${{ github.sha }}" || echo "No changes to commit"
+          git remote set-url origin https://x-access-token:${{ secrets.API_DOCS_TOKEN }}@github.com/kscalelabs/api-docs.git
           git push -u origin update-docs-${{ github.sha }}
           gh pr create --title "Update documentation" --body "Auto-generated documentation update from commit ${{ github.sha }}"
         env:
