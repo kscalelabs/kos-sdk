@@ -63,8 +63,14 @@ jobs:
           git checkout -b update-docs-${{ github.sha }}
           git add .
           git commit -m "Update demos documentation from ${{ github.sha }}" || echo "No changes to commit"
-          git remote set-url origin https://x-access-token:${{ secrets.API_DOCS_TOKEN }}@github.com/kscalelabs/api-docs.git
+          
+          # Set Git credentials explicitly instead of in the URL
+          git config --global credential.helper store
+          echo "https://github-actions:${{ secrets.API_DOCS_TOKEN }}@github.com" > ~/.git-credentials
+          git remote set-url origin "https://github.com/kscalelabs/api-docs.git"
           git push -u origin update-docs-${{ github.sha }}
+          
+          # Create PR using the GitHub CLI with the same token
           gh pr create --title "Update documentation" --body "Auto-generated documentation update from commit ${{ github.sha }}"
         env:
           GH_TOKEN: ${{ secrets.API_DOCS_TOKEN }}
