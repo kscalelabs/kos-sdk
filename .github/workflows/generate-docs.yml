@@ -66,8 +66,8 @@ jobs:
           
           # Set Git credentials explicitly instead of in the URL
           git config --global credential.helper store
-          echo "https://github-actions:${{ secrets.API_DOCS_TOKEN }}@github.com" > ~/.git-credentials
-          git remote set-url origin "https://github.com/kscalelabs/api-docs.git"
+          echo "https://oauth2:${{ secrets.API_DOCS_TOKEN }}@github.com" > ~/.git-credentials
+          git remote set-url origin "https://oauth2:${{ secrets.API_DOCS_TOKEN }}@github.com/kscalelabs/api-docs.git"
           git push -u origin update-docs-${{ github.sha }}
           
           # Create PR using the GitHub CLI with the same token
